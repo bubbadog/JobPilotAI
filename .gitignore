@@ -46,3 +46,4 @@ test-results/
 # ── Exports (generated files) ──
 data/exports/
 job_search_export.json
+CLAUDE.local.md
