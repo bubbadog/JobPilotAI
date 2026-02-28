@@ -1,0 +1,21 @@
+# Job Search Command Center v4 — Python Engine Dependencies
+# Install: pip install -r requirements.txt
+
+# ── Browser Automation ──
+playwright>=1.40.0          # Headless browser for scraping + form filling
+
+# ── Resume Parsing ──
+pdfplumber>=0.10.0          # PDF text extraction (primary)
+PyPDF2>=3.0.0               # PDF fallback parser
+python-docx>=1.1.0          # DOCX resume parsing
+
+# ── Data & Matching ──
+# (uses stdlib: difflib, json, re, dataclasses, pathlib, collections)
+
+# ── Scheduling ──
+schedule>=1.2.0             # Cron-like task scheduler
+
+# ── Optional: Enhanced Features ──
+# requests>=2.31.0          # For API-based boards (Adzuna, TheMuse) — uncomment if needed
+# beautifulsoup4>=4.12.0    # Fallback HTML parsing — uncomment if needed
+# rich>=13.0.0              # Pretty CLI output — uncomment for nicer terminal UX

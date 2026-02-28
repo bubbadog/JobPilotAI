@@ -1,0 +1,2909 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self';">
+<title>JobPilotAI v4.1</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --blue: #2E75B6; --blue-light: #E8F0FE; --blue-dark: #1A4F7A;
+  --green: #28A745; --green-light: #D4EDDA; --yellow: #FFC107; --yellow-light: #FFF3CD;
+  --red: #DC3545; --red-light: #F8D7DA; --gray: #6C757D; --gray-light: #F8F9FA;
+  --dark: #212529; --white: #FFFFFF; --shadow: 0 2px 8px rgba(0,0,0,0.08);
+  --radius: 10px; --purple: #6F42C1; --purple-light: #E8DEFF;
+}
+body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #F0F2F5; color: var(--dark); }
+.header { background: linear-gradient(135deg, var(--blue-dark), var(--blue)); color: white; padding: 20px 32px; display: flex; justify-content: space-between; align-items: center; }
+.header h1 { font-size: 22px; font-weight: 600; }
+.header .subtitle { font-size: 13px; opacity: 0.85; margin-top: 2px; }
+.header-right { display: flex; gap: 12px; align-items: center; }
+.header-btn { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; transition: all 0.2s; }
+.header-btn:hover { background: rgba(255,255,255,0.25); }
+.stats-bar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 12px; padding: 16px 32px; background: white; border-bottom: 1px solid #E5E7EB; }
+.stat-card { text-align: center; }
+.stat-number { font-size: 26px; font-weight: 700; color: var(--blue); }
+.stat-label { font-size: 10px; color: var(--gray); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+.main { display: grid; grid-template-columns: 260px 1fr; min-height: calc(100vh - 150px); }
+.sidebar { background: white; border-right: 1px solid #E5E7EB; padding: 12px 0; overflow-y: auto; }
+.sidebar-section { padding: 6px 12px; }
+.sidebar-title { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--gray); margin-bottom: 8px; font-weight: 600; }
+.nav-item { display: flex; align-items: center; gap: 8px; padding: 9px 14px; cursor: pointer; border-radius: 6px; margin: 2px 6px; font-size: 13px; color: #374151; transition: all 0.15s; }
+.nav-item:hover { background: var(--blue-light); color: var(--blue); }
+.nav-item.active { background: var(--blue); color: white; }
+.nav-item .icon { font-size: 15px; width: 18px; text-align: center; }
+.nav-item .badge { margin-left: auto; background: var(--red); color: white; font-size: 10px; padding: 1px 6px; border-radius: 10px; }
+.content { padding: 20px 28px; overflow-y: auto; max-height: calc(100vh - 150px); }
+.panel { display: none; }
+.panel.active { display: block; }
+.card { background: white; border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px; margin-bottom: 14px; }
+.card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.card-title { font-size: 15px; font-weight: 600; }
+.toggle-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #F3F4F6; }
+.toggle-row:last-child { border-bottom: none; }
+.toggle-info { flex: 1; }
+.toggle-label { font-size: 13px; font-weight: 500; }
+.toggle-desc { font-size: 11px; color: var(--gray); margin-top: 2px; }
+.toggle { position: relative; width: 42px; height: 22px; flex-shrink: 0; margin-left: 14px; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: #D1D5DB; border-radius: 22px; transition: 0.3s; }
+.toggle .slider:before { content: ""; position: absolute; height: 16px; width: 16px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: 0.3s; }
+.toggle input:checked + .slider { background: var(--blue); }
+.toggle input:checked + .slider:before { transform: translateX(20px); }
+.job-card { background: white; border-radius: var(--radius); box-shadow: var(--shadow); padding: 14px 18px; margin-bottom: 10px; border-left: 4px solid var(--blue); transition: all 0.2s; }
+.job-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
+.job-card.high-match { border-left-color: var(--green); }
+.job-card.medium-match { border-left-color: var(--yellow); }
+.job-card.low-match { border-left-color: var(--gray); }
+.job-title { font-size: 14px; font-weight: 600; color: var(--dark); }
+.job-company { font-size: 12px; color: var(--blue); margin-top: 2px; }
+.job-meta { display: flex; gap: 12px; margin-top: 6px; font-size: 11px; color: var(--gray); flex-wrap: wrap; }
+.match-score { font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 20px; white-space: nowrap; }
+.match-high { background: var(--green-light); color: var(--green); }
+.match-medium { background: var(--yellow-light); color: #856404; }
+.match-low { background: var(--gray-light); color: var(--gray); }
+.job-actions { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+.btn { padding: 5px 12px; border-radius: 6px; font-size: 11px; cursor: pointer; border: 1px solid; transition: all 0.2s; font-weight: 500; }
+.btn-primary { background: var(--blue); color: white; border-color: var(--blue); }
+.btn-primary:hover { background: var(--blue-dark); }
+.btn-outline { background: white; color: var(--blue); border-color: var(--blue); }
+.btn-outline:hover { background: var(--blue-light); }
+.btn-success { background: var(--green); color: white; border-color: var(--green); }
+.btn-danger { background: white; color: var(--red); border-color: var(--red); }
+.btn-purple { background: var(--purple); color: white; border-color: var(--purple); }
+.btn-purple:hover { background: #5a32a3; }
+.score-breakdown { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 8px; padding: 8px; background: var(--gray-light); border-radius: 6px; font-size: 11px; }
+.score-dim { text-align: center; }
+.score-dim .val { font-weight: 700; font-size: 14px; }
+.score-dim .lbl { color: var(--gray); font-size: 10px; }
+.tracker-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.tracker-table th { text-align: left; padding: 8px 10px; background: var(--gray-light); border-bottom: 2px solid #E5E7EB; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--gray); }
+.tracker-table td { padding: 8px 10px; border-bottom: 1px solid #F3F4F6; }
+.tracker-table tr:hover { background: #FAFBFC; }
+.status-badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; }
+.status-applied { background: var(--blue-light); color: var(--blue); }
+.status-interview { background: var(--green-light); color: var(--green); }
+.status-followup { background: var(--yellow-light); color: #856404; }
+.status-rejected { background: var(--red-light); color: var(--red); }
+.status-queued { background: #E5E7EB; color: var(--gray); }
+.settings-group { margin-bottom: 20px; }
+.settings-label { font-size: 12px; font-weight: 500; margin-bottom: 4px; display: block; }
+.settings-input { width: 100%; padding: 7px 10px; border: 1px solid #D1D5DB; border-radius: 6px; font-size: 13px; transition: border-color 0.2s; }
+.settings-input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-light); }
+select.settings-input { cursor: pointer; }
+.cl-preview { background: var(--gray-light); border-radius: 8px; padding: 16px; font-size: 12px; line-height: 1.7; max-height: 350px; overflow-y: auto; border: 1px solid #E5E7EB; white-space: pre-wrap; }
+.followup-item { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 8px; margin-bottom: 6px; }
+.followup-urgent { background: var(--red-light); }
+.followup-soon { background: var(--yellow-light); }
+.followup-later { background: var(--blue-light); }
+.network-card { display: flex; gap: 10px; padding: 10px; border-radius: 8px; border: 1px solid #E5E7EB; margin-bottom: 6px; }
+.network-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--blue); color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 13px; flex-shrink: 0; }
+.add-form { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+.form-group { display: flex; flex-direction: column; gap: 3px; }
+.form-group label { font-size: 11px; font-weight: 500; color: var(--gray); }
+.form-group input, .form-group select, .form-group textarea { padding: 7px 9px; border: 1px solid #D1D5DB; border-radius: 6px; font-size: 12px; }
+.form-group textarea { resize: vertical; min-height: 70px; }
+.empty-state { text-align: center; padding: 36px 20px; color: var(--gray); }
+.empty-state .icon { font-size: 40px; margin-bottom: 10px; }
+.empty-state h3 { font-size: 15px; color: var(--dark); margin-bottom: 4px; }
+.empty-state p { font-size: 12px; }
+.modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
+.modal-overlay.show { display: flex; }
+.modal { background: white; border-radius: var(--radius); padding: 22px; max-width: 640px; width: 92%; max-height: 85vh; overflow-y: auto; }
+.modal h2 { font-size: 17px; margin-bottom: 14px; }
+.modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+/* Coaching styles */
+.coach-section { background: var(--purple-light); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; border-left: 4px solid var(--purple); }
+.coach-title { font-size: 14px; font-weight: 600; color: var(--purple); margin-bottom: 6px; }
+.coach-text { font-size: 12px; line-height: 1.6; }
+.qa-card { background: white; border: 1px solid #E5E7EB; border-radius: 8px; padding: 14px; margin-bottom: 10px; }
+.qa-question { font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+.qa-hint { font-size: 11px; color: var(--gray); margin-bottom: 8px; }
+.qa-answer { width: 100%; min-height: 80px; padding: 8px; border: 1px solid #D1D5DB; border-radius: 6px; font-size: 12px; resize: vertical; }
+.qa-feedback { margin-top: 8px; padding: 10px; border-radius: 6px; font-size: 12px; line-height: 1.5; display: none; }
+.qa-feedback.good { background: var(--green-light); color: #155724; display: block; }
+.qa-feedback.improve { background: var(--yellow-light); color: #856404; display: block; }
+.salary-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 10px; }
+.salary-table th { text-align: left; padding: 8px; background: var(--gray-light); font-weight: 600; }
+.salary-table td { padding: 8px; border-bottom: 1px solid #F3F4F6; }
+.star-grid { display: grid; grid-template-columns: 80px 1fr; gap: 4px; font-size: 12px; margin: 8px 0; }
+.star-label { font-weight: 600; color: var(--purple); }
+.pill { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 600; margin: 2px; }
+.pill-green { background: var(--green-light); color: var(--green); }
+.pill-blue { background: var(--blue-light); color: var(--blue); }
+.pill-yellow { background: var(--yellow-light); color: #856404; }
+.pill-red { background: var(--red-light); color: var(--red); }
+.freshness-indicator { font-size: 10px; padding: 2px 6px; border-radius: 8px; font-weight: 600; }
+.fresh-hot { background: #FF6B35; color: white; }
+.fresh-warm { background: var(--yellow); color: #333; }
+.fresh-cool { background: #E5E7EB; color: var(--gray); }
+.salary-range { font-size: 11px; color: var(--green); font-weight: 600; }
+.dedup-warning { font-size: 10px; color: var(--yellow); font-style: italic; }
+/* ===================== WATCHLIST STYLES ===================== */
+.watchlist-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.watchlist-table th { text-align: left; padding: 8px 10px; background: var(--gray-light); border-bottom: 2px solid #E5E7EB; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--gray); }
+.watchlist-table td { padding: 8px 10px; border-bottom: 1px solid #F3F4F6; }
+.watchlist-table tr:hover { background: #FAFBFC; }
+.watched-pill { display: inline-block; padding: 1px 6px; border-radius: 8px; font-size: 9px; font-weight: 600; background: #E0F2FE; color: #0369A1; margin-left: 6px; }
+/* ===================== GAP ANALYSIS STYLES ===================== */
+.gap-panel { margin-top: 8px; padding: 10px; background: var(--gray-light); border-radius: 8px; border: 1px solid #E5E7EB; }
+.gap-bar { height: 8px; border-radius: 4px; background: #E5E7EB; overflow: hidden; margin: 6px 0; }
+.gap-bar-fill { height: 100%; border-radius: 4px; transition: width 0.3s; }
+.skill-pills { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+/* ===================== MOMENTUM DASHBOARD STYLES ===================== */
+.momentum-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.momentum-progress { flex: 1; height: 10px; background: #E5E7EB; border-radius: 5px; overflow: hidden; }
+.momentum-fill { height: 100%; background: linear-gradient(90deg, var(--blue), var(--green)); border-radius: 5px; transition: width 0.5s; }
+.funnel-row { display: flex; align-items: center; gap: 6px; padding: 6px 0; font-size: 12px; }
+.funnel-bar { height: 24px; border-radius: 4px; display: flex; align-items: center; padding: 0 8px; color: white; font-size: 11px; font-weight: 600; min-width: 30px; }
+.streak-badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; }
+.health-badge { padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; display: inline-block; }
+/* ===================== PITCH STYLES ===================== */
+.pitch-card { background: var(--green-light); border-radius: 8px; padding: 14px; border-left: 4px solid var(--green); margin-top: 8px; }
+.pitch-reason { padding: 4px 0; font-size: 12px; display: flex; gap: 6px; align-items: start; }
+.pitch-elevator { background: var(--blue-light); border-radius: 8px; padding: 12px; margin-top: 8px; font-size: 12px; line-height: 1.6; border-left: 4px solid var(--blue); }
+/* ===================== EMAIL TEMPLATE STYLES ===================== */
+.email-draft { background: white; border: 1px solid #E5E7EB; border-radius: 8px; padding: 14px; margin-top: 8px; }
+.email-subject { font-weight: 600; font-size: 13px; padding: 6px 0; border-bottom: 1px solid #E5E7EB; margin-bottom: 8px; }
+.email-body { font-size: 12px; line-height: 1.7; white-space: pre-wrap; }
+.tone-selector { display: flex; gap: 4px; margin-bottom: 8px; }
+.tone-btn { padding: 4px 10px; border-radius: 12px; font-size: 10px; cursor: pointer; border: 1px solid #D1D5DB; background: white; transition: all 0.2s; }
+.tone-btn.active { background: var(--blue); color: white; border-color: var(--blue); }
+/* ===================== RESEARCH CARD STYLES ===================== */
+.research-card { background: white; border: 1px solid #E5E7EB; border-radius: var(--radius); padding: 16px; }
+.research-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; font-size: 12px; }
+.research-item { padding: 8px; background: var(--gray-light); border-radius: 6px; }
+.research-label { font-size: 10px; color: var(--gray); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }
+.research-value { font-weight: 600; }
+/* ===================== V4: AUTOMATION CONTROL PANEL ===================== */
+.auto-control { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 10px 32px; background: linear-gradient(135deg, #1a1a2e, #16213e); border-bottom: 1px solid #0f3460; }
+.auto-control select, .auto-control input { padding: 5px 10px; border-radius: 6px; font-size: 12px; border: 1px solid #374151; background: #1f2937; color: white; }
+.auto-control .ctrl-btn { padding: 6px 14px; border-radius: 6px; font-size: 12px; cursor: pointer; border: none; font-weight: 600; transition: all 0.2s; }
+.ctrl-btn.start { background: var(--green); color: white; }
+.ctrl-btn.pause { background: var(--yellow); color: #000; }
+.ctrl-btn.stop { background: var(--red); color: white; }
+.auto-control .ctrl-label { color: #9CA3AF; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+.auto-control .ctrl-stat { color: white; font-size: 13px; font-weight: 600; }
+/* ===================== V4: KANBAN PIPELINE ===================== */
+.kanban-board { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 12px; min-height: 400px; }
+.kanban-col { min-width: 200px; flex: 1; background: var(--gray-light); border-radius: var(--radius); padding: 10px; }
+.kanban-col-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 2px solid #D1D5DB; }
+.kanban-col-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--gray); }
+.kanban-col-count { font-size: 11px; font-weight: 700; background: var(--blue); color: white; padding: 1px 7px; border-radius: 10px; }
+.kanban-card { background: white; border-radius: 8px; padding: 10px; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); cursor: grab; border-left: 3px solid var(--blue); font-size: 12px; }
+.kanban-card .kc-title { font-weight: 600; font-size: 12px; margin-bottom: 2px; }
+.kanban-card .kc-company { color: var(--blue); font-size: 11px; }
+.kanban-card .kc-meta { display: flex; justify-content: space-between; margin-top: 6px; font-size: 10px; color: var(--gray); }
+/* ===================== V4: APPLICATION QUEUE ===================== */
+.queue-controls { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; align-items: center; }
+.queue-controls .batch-btn { padding: 6px 14px; font-size: 11px; border-radius: 6px; cursor: pointer; border: 1px solid; font-weight: 500; }
+.queue-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.queue-table th { text-align: left; padding: 8px 10px; background: var(--gray-light); border-bottom: 2px solid #E5E7EB; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--gray); }
+.queue-table td { padding: 8px 10px; border-bottom: 1px solid #F3F4F6; }
+.queue-table tr:hover { background: #FAFBFC; }
+.q-status { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; }
+.q-queued { background: #E5E7EB; color: var(--gray); }
+.q-filling { background: var(--blue-light); color: var(--blue); }
+.q-ready { background: var(--yellow-light); color: #856404; }
+.q-submitted { background: var(--green-light); color: var(--green); }
+.q-error { background: var(--red-light); color: var(--red); }
+/* ===================== V4: ACTION LOG ===================== */
+.action-log { font-family: 'Courier New', monospace; font-size: 11px; max-height: 300px; overflow-y: auto; background: #0D1117; color: #C9D1D9; border-radius: 8px; padding: 12px; }
+.action-log .log-entry { padding: 2px 0; border-bottom: 1px solid #21262D; }
+.action-log .log-time { color: #8B949E; }
+.action-log .log-success { color: #3FB950; }
+.action-log .log-warn { color: #D29922; }
+.action-log .log-error { color: #F85149; }
+.action-log .log-info { color: #58A6FF; }
+/* ===================== V4: QA BANK EDITOR ===================== */
+.qa-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.qa-table th { text-align: left; padding: 6px 8px; background: var(--gray-light); font-size: 11px; }
+.qa-table td { padding: 6px 8px; border-bottom: 1px solid #F3F4F6; vertical-align: top; }
+.qa-table td:first-child { width: 30%; font-weight: 500; }
+.qa-table td:last-child { width: 15%; }
+@media (max-width: 900px) {
+  .stats-bar { grid-template-columns: repeat(4, 1fr); }
+  .main { grid-template-columns: 1fr; }
+  .sidebar { display: flex; overflow-x: auto; padding: 6px; border-right: none; border-bottom: 1px solid #E5E7EB; }
+  .sidebar-section { display: flex; gap: 4px; }
+  .sidebar-title { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>JobPilotAI <span style="font-size:12px;opacity:0.7;">v4.1</span></h1>
+    <div class="subtitle"><span id="header-user-name"></span> | Last scan: <span id="lastScan">Not yet run</span></div>
+  </div>
+  <div class="header-right">
+    <button class="header-btn" onclick="showPanel('settings')">Settings</button>
+    <button class="header-btn" onclick="runManualScan()">Run Scan Now</button>
+    <button class="header-btn" onclick="importEngineData()">Import Engine Data</button>
+    <button class="header-btn" onclick="exportData()">Export Data</button>
+  </div>
+</div>
+
+<div class="stats-bar">
+  <div class="stat-card"><div class="stat-number" id="stat-discovered">0</div><div class="stat-label">Jobs Found</div></div>
+  <div class="stat-card"><div class="stat-number" id="stat-queued">0</div><div class="stat-label">Queued</div></div>
+  <div class="stat-card"><div class="stat-number" id="stat-applied">0</div><div class="stat-label">Applied</div></div>
+  <div class="stat-card"><div class="stat-number" id="stat-interviews">0</div><div class="stat-label">Interviews</div></div>
+  <div class="stat-card"><div class="stat-number" id="stat-followups">0</div><div class="stat-label">Follow Ups</div></div>
+  <div class="stat-card"><div class="stat-number" id="stat-network">0</div><div class="stat-label">Connections</div></div>
+  <div class="stat-card"><div class="stat-number" id="stat-coached">0</div><div class="stat-label">Prepped</div></div>
+</div>
+
+<!-- ===================== AUTOMATION CONTROL PANEL ===================== -->
+<div class="auto-control" id="automation-control">
+  <div><div class="ctrl-label">Mode</div><select id="ctrl-mode" onchange="saveAutomationConfig()"><option value="semi-auto">Semi-Auto</option><option value="batch">Batch Prep</option><option value="full-auto">Full Auto</option></select></div>
+  <div><div class="ctrl-label">Strategy</div><select id="ctrl-strategy" onchange="saveAutomationConfig()"><option value="wide-net">Wide Net (50%+)</option><option value="balanced" selected>Balanced (60%+)</option><option value="targeted">Targeted (85%+)</option></select></div>
+  <div><div class="ctrl-label">Daily Target</div><input type="number" id="ctrl-target" value="25" min="1" max="100" style="width:60px;" onchange="saveAutomationConfig()"></div>
+  <div style="display:flex;gap:6px;">
+    <button class="ctrl-btn start" onclick="startDiscovery()">&#9654; Discover</button>
+    <button class="ctrl-btn pause" onclick="pauseEngine()" id="btn-pause" style="display:none;">&#9208; Pause</button>
+    <button class="ctrl-btn stop" onclick="stopEngine()" id="btn-stop" style="display:none;">&#9209; Stop</button>
+  </div>
+  <div style="margin-left:auto;text-align:right;">
+    <div class="ctrl-label">Today</div>
+    <div class="ctrl-stat" id="ctrl-today-stat">0 applied | 0 interviews</div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-title">Dashboard</div>
+      <div class="nav-item active" onclick="showPanel('discover')" data-panel="discover"><span class="icon">&#128269;</span> Job Discovery <span class="badge" id="badge-discover">0</span></div>
+      <div class="nav-item" onclick="showPanel('queue')" data-panel="queue"><span class="icon">&#9889;</span> Auto-Apply Queue <span class="badge" id="badge-queue" style="display:none">0</span></div>
+      <div class="nav-item" onclick="showPanel('pipeline')" data-panel="pipeline"><span class="icon">&#128200;</span> Pipeline</div>
+      <div class="nav-item" onclick="showPanel('tracker')" data-panel="tracker"><span class="icon">&#128203;</span> Applications</div>
+      <div class="nav-item" onclick="showPanel('coverletters')" data-panel="coverletters"><span class="icon">&#128221;</span> Cover Letters</div>
+      <div class="nav-item" onclick="showPanel('followups')" data-panel="followups"><span class="icon">&#128276;</span> Follow Ups <span class="badge" id="badge-followups" style="display:none">0</span></div>
+      <div class="nav-item" onclick="showPanel('networking')" data-panel="networking"><span class="icon">&#129309;</span> Networking</div>
+      <div class="nav-item" onclick="showPanel('watchlist')" data-panel="watchlist"><span class="icon">&#127919;</span> Watched Companies <span class="badge" id="badge-watchlist" style="display:none">0</span></div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-title">Preparation</div>
+      <div class="nav-item" onclick="showPanel('coaching')" data-panel="coaching"><span class="icon">&#127891;</span> Interview Coach</div>
+      <div class="nav-item" onclick="showPanel('mockinterview')" data-panel="mockinterview"><span class="icon">&#127908;</span> Mock Interview</div>
+      <div class="nav-item" onclick="showPanel('salary')" data-panel="salary"><span class="icon">&#128176;</span> Salary Negotiation</div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-title">Materials A/B</div>
+      <div class="nav-item" onclick="showPanel('resumevariants')" data-panel="resumevariants"><span class="icon">&#128196;</span> Resume Variants</div>
+      <div class="nav-item" onclick="showPanel('clvariants')" data-panel="clvariants"><span class="icon">&#9997;</span> CL Variants</div>
+      <div class="nav-item" onclick="showPanel('abperformance')" data-panel="abperformance"><span class="icon">&#128202;</span> A/B Performance</div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-title">System</div>
+      <div class="nav-item" onclick="showPanel('qabank')" data-panel="qabank"><span class="icon">&#128218;</span> Q&A Bank</div>
+      <div class="nav-item" onclick="showPanel('settings')" data-panel="settings"><span class="icon">&#9881;</span> Settings</div>
+      <div class="nav-item" onclick="showPanel('logs')" data-panel="logs"><span class="icon">&#128196;</span> Activity Log</div>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ===================== JOB DISCOVERY ===================== -->
+    <div class="panel active" id="panel-discover">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">New Job Matches</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <select class="settings-input" style="width:auto;font-size:11px;padding:4px 8px;" id="filter-match" onchange="renderJobs()">
+              <option value="all">All Matches</option><option value="high">85%+ (High)</option><option value="medium">60-84% (Med)</option><option value="low">&lt;60%</option>
+            </select>
+            <select class="settings-input" style="width:auto;font-size:11px;padding:4px 8px;" id="filter-sector" onchange="renderJobs()">
+              <option value="all">All Sectors</option><option value="biotech">Biotech</option><option value="tech">Tech</option><option value="defense">Defense</option><option value="startup">Startup</option><option value="education">Education</option><option value="government">Government</option><option value="remote">Remote</option>
+            </select>
+            <select class="settings-input" style="width:auto;font-size:11px;padding:4px 8px;" id="filter-fresh" onchange="renderJobs()">
+              <option value="all">Any Age</option><option value="48h">Last 48h</option><option value="7d">Last 7 Days</option>
+            </select>
+          </div>
+        </div>
+        <div id="job-list"></div>
+      </div>
+    </div>
+
+    <!-- ===================== APPLICATION TRACKER ===================== -->
+    <!-- ===================== AUTO-APPLY QUEUE ===================== -->
+    <div class="panel" id="panel-queue">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Auto-Apply Queue</div>
+          <div class="queue-controls">
+            <select class="settings-input" style="width:auto;font-size:11px;padding:4px 8px;" id="queue-filter" onchange="renderQueue()">
+              <option value="all">All</option><option value="queued">Queued</option><option value="ready-for-review">Ready for Review</option><option value="submitted">Submitted</option><option value="error">Errors</option>
+            </select>
+            <button class="btn btn-success" onclick="approveSelected()">Approve Selected</button>
+            <button class="btn btn-primary" onclick="autoFillAll()">Auto-Fill All</button>
+            <label style="font-size:11px;display:flex;align-items:center;gap:4px;"><input type="checkbox" id="queue-select-all" onchange="toggleQueueSelectAll()"> Select All</label>
+          </div>
+        </div>
+        <div id="queue-stats" style="display:flex;gap:16px;margin-bottom:12px;font-size:12px;"></div>
+        <table class="queue-table">
+          <thead><tr><th style="width:30px;"></th><th>Score</th><th>Title</th><th>Company</th><th>ATS</th><th>Easy Apply</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="queue-body"></tbody>
+        </table>
+        <div class="empty-state" id="queue-empty" style="display:none;">
+          <div class="icon">&#9889;</div>
+          <h3>Queue is empty</h3>
+          <p>Run discovery to find jobs, then they'll appear here for processing.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== KANBAN PIPELINE ===================== -->
+    <div class="panel" id="panel-pipeline">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Application Pipeline</div>
+          <div style="font-size:11px;color:var(--gray);">Drag cards between stages</div>
+        </div>
+        <div class="kanban-board" id="kanban-board">
+          <div class="kanban-col" data-stage="discovered" ondrop="kanbanDrop(event,'discovered')" ondragover="event.preventDefault()">
+            <div class="kanban-col-header"><span class="kanban-col-title">Discovered</span><span class="kanban-col-count" id="k-count-discovered">0</span></div>
+            <div id="k-col-discovered"></div>
+          </div>
+          <div class="kanban-col" data-stage="queued" ondrop="kanbanDrop(event,'queued')" ondragover="event.preventDefault()">
+            <div class="kanban-col-header"><span class="kanban-col-title">Queued</span><span class="kanban-col-count" id="k-count-queued">0</span></div>
+            <div id="k-col-queued"></div>
+          </div>
+          <div class="kanban-col" data-stage="applied" ondrop="kanbanDrop(event,'applied')" ondragover="event.preventDefault()">
+            <div class="kanban-col-header"><span class="kanban-col-title">Applied</span><span class="kanban-col-count" id="k-count-applied">0</span></div>
+            <div id="k-col-applied"></div>
+          </div>
+          <div class="kanban-col" data-stage="screening" ondrop="kanbanDrop(event,'screening')" ondragover="event.preventDefault()">
+            <div class="kanban-col-header"><span class="kanban-col-title">Screening</span><span class="kanban-col-count" id="k-count-screening">0</span></div>
+            <div id="k-col-screening"></div>
+          </div>
+          <div class="kanban-col" data-stage="interview" ondrop="kanbanDrop(event,'interview')" ondragover="event.preventDefault()">
+            <div class="kanban-col-header"><span class="kanban-col-title">Interview</span><span class="kanban-col-count" id="k-count-interview">0</span></div>
+            <div id="k-col-interview"></div>
+          </div>
+          <div class="kanban-col" data-stage="offer" ondrop="kanbanDrop(event,'offer')" ondragover="event.preventDefault()">
+            <div class="kanban-col-header"><span class="kanban-col-title">Offer</span><span class="kanban-col-count" id="k-count-offer">0</span></div>
+            <div id="k-col-offer"></div>
+          </div>
+          <div class="kanban-col" data-stage="rejected" ondrop="kanbanDrop(event,'rejected')" ondragover="event.preventDefault()">
+            <div class="kanban-col-header"><span class="kanban-col-title">Rejected</span><span class="kanban-col-count" id="k-count-rejected">0</span></div>
+            <div id="k-col-rejected"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" id="panel-tracker">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Application Tracker</div>
+          <button class="btn btn-primary" onclick="showModal('modal-add-app')">+ Add Application</button>
+        </div>
+        <table class="tracker-table">
+          <thead><tr><th>Company</th><th>Role</th><th>Date</th><th>Status</th><th>Follow Up</th><th>Actions</th></tr></thead>
+          <tbody id="tracker-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===================== COVER LETTERS ===================== -->
+    <div class="panel" id="panel-coverletters">
+      <div class="card">
+        <div class="card-header"><div class="card-title">Cover Letter Generator</div></div>
+        <p style="font-size:12px;color:var(--gray);margin-bottom:12px;">Paste a job description to generate a tailored cover letter in your writing style.</p>
+        <div class="add-form" style="margin-top:0;">
+          <div class="form-group"><label>Job Title</label><input type="text" id="cl-job-title" placeholder="e.g. Senior Product Manager"></div>
+          <div class="form-group"><label>Company</label><input type="text" id="cl-company" placeholder="e.g. Acme Corp"></div>
+          <div class="form-group"><label>Tone</label>
+            <select id="cl-tone"><option value="confident">Confident and Direct</option><option value="warm">Professional and Warm</option><option value="formal">Formal and Traditional</option></select>
+          </div>
+          <div class="form-group"><label>Sector</label>
+            <select id="cl-sector"><option value="biotech">Biotech/Pharma</option><option value="tech">Technology/SaaS</option><option value="defense">Defense/Aerospace</option><option value="education">Education</option><option value="government">Government</option><option value="startup">Startup</option></select>
+          </div>
+        </div>
+        <div class="form-group" style="margin-top:10px;"><label>Job Description (paste full JD)</label><textarea id="cl-jd" rows="5" placeholder="Paste the full job description here..."></textarea></div>
+        <button class="btn btn-primary" style="margin-top:10px;" onclick="generateCoverLetter()">Generate Cover Letter</button>
+        <div id="cl-output" style="margin-top:14px;display:none;">
+          <div class="card-title" style="margin-bottom:6px;">Generated Cover Letter</div>
+          <div class="cl-preview" id="cl-preview-text"></div>
+          <div style="margin-top:10px;display:flex;gap:6px;">
+            <button class="btn btn-outline" onclick="copyCL()">Copy to Clipboard</button>
+            <button class="btn btn-primary" onclick="saveCL()">Save to Library</button>
+          </div>
+        </div>
+      </div>
+      <div class="card"><div class="card-title" style="margin-bottom:10px;">Saved Cover Letters</div><div id="cl-library"><div class="empty-state"><p>No saved cover letters yet.</p></div></div></div>
+    </div>
+
+    <!-- ===================== FOLLOW UPS ===================== -->
+    <div class="panel" id="panel-followups">
+      <div class="card">
+        <div class="card-header"><div class="card-title">Follow Up Schedule</div></div>
+        <div id="followup-list"><div class="empty-state"><div class="icon">&#128276;</div><h3>No follow ups yet</h3><p>Follow ups appear as you track applications.</p></div></div>
+      </div>
+    </div>
+
+    <!-- ===================== NETWORKING ===================== -->
+    <div class="panel" id="panel-networking">
+      <div class="card">
+        <div class="card-header"><div class="card-title">Networking Tracker (5/day target)</div><button class="btn btn-primary" onclick="showModal('modal-add-contact')">+ Add Contact</button></div>
+        <div style="display:flex;gap:6px;margin-bottom:14px;">
+          <div style="flex:1;background:var(--blue-light);padding:10px;border-radius:8px;text-align:center;"><div style="font-size:22px;font-weight:700;color:var(--blue);" id="net-today">0</div><div style="font-size:10px;color:var(--gray);">TODAY</div></div>
+          <div style="flex:1;background:var(--green-light);padding:10px;border-radius:8px;text-align:center;"><div style="font-size:22px;font-weight:700;color:var(--green);" id="net-week">0</div><div style="font-size:10px;color:var(--gray);">THIS WEEK</div></div>
+          <div style="flex:1;background:var(--yellow-light);padding:10px;border-radius:8px;text-align:center;"><div style="font-size:22px;font-weight:700;color:#856404;" id="net-pending">0</div><div style="font-size:10px;color:var(--gray);">AWAITING</div></div>
+          <div style="flex:1;background:var(--gray-light);padding:10px;border-radius:8px;text-align:center;"><div style="font-size:22px;font-weight:700;color:var(--dark);" id="net-total">0</div><div style="font-size:10px;color:var(--gray);">TOTAL</div></div>
+        </div>
+        <div id="network-list"><div class="empty-state"><div class="icon">&#129309;</div><h3>Start networking!</h3><p>Goal: 5 new connections per day.</p></div></div>
+      </div>
+    </div>
+
+    <!-- ===================== INTERVIEW COACH ===================== -->
+    <div class="panel" id="panel-coaching">
+      <div class="card">
+        <div class="card-header"><div class="card-title">Interview Preparation Coach</div></div>
+        <p style="font-size:12px;color:var(--gray);margin-bottom:14px;">Select a role you have applied to (or enter a new one) and get a complete preparation guide tailored to your background.</p>
+        <div class="add-form" style="margin-top:0;">
+          <div class="form-group"><label>Company</label><input type="text" id="coach-company" placeholder="e.g. Acme Corp" onchange="generateCoachingGuide()"></div>
+          <div class="form-group"><label>Role</label>
+            <select id="coach-role" onchange="generateCoachingGuide()">
+              <option value="">Select a role...</option>
+              <option value="pm-biotech">Product Manager (Biotech/Pharma)</option>
+              <option value="pm-ai">AI Product Manager</option>
+              <option value="pm-tech">Product Manager (Tech/SaaS)</option>
+              <option value="pm-defense">Program Manager (Defense/Aerospace)</option>
+              <option value="strategy">Strategic Planning Director</option>
+              <option value="data-gov">Data Governance Manager</option>
+              <option value="qc">Quality Control Associate</option>
+              <option value="adjunct">Adjunct Professor</option>
+              <option value="tpm">Technical Program Manager</option>
+              <option value="govt-pm">Government Program Manager</option>
+            </select>
+          </div>
+        </div>
+        <div id="coaching-output" style="margin-top:16px;"></div>
+      </div>
+    </div>
+
+    <!-- ===================== MOCK INTERVIEW ===================== -->
+    <div class="panel" id="panel-mockinterview">
+      <div class="card">
+        <div class="card-header"><div class="card-title">Mock Interview Practice</div></div>
+        <p style="font-size:12px;color:var(--gray);margin-bottom:14px;">Practice answering interview questions. Type your answer, then reveal the coaching feedback.</p>
+        <div class="add-form" style="margin-top:0;margin-bottom:14px;">
+          <div class="form-group"><label>Interview Type</label>
+            <select id="mock-type" onchange="generateMockQuestions()">
+              <option value="">Select type...</option>
+              <option value="behavioral">Behavioral (STAR Method)</option>
+              <option value="product">Product Management Case</option>
+              <option value="technical">Technical / Data / AI</option>
+              <option value="leadership">Leadership and Strategy</option>
+              <option value="culture">Culture Fit and Motivation</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Difficulty</label>
+            <select id="mock-difficulty">
+              <option value="standard">Standard</option>
+              <option value="hard">Senior / Director Level</option>
+            </select>
+          </div>
+        </div>
+        <div id="mock-questions"></div>
+      </div>
+    </div>
+
+    <!-- ===================== SALARY NEGOTIATION ===================== -->
+    <div class="panel" id="panel-salary">
+      <div class="card">
+        <div class="card-header"><div class="card-title">Salary Negotiation Toolkit</div></div>
+        <div class="coach-section">
+          <div class="coach-title">Your Market Value Summary</div>
+          <div class="coach-text">Based on: MBA + MS Biotechnology, 7 years PM experience, AI/ML expertise, Southern California market.
+          <table class="salary-table">
+            <tr><th>Role Category</th><th>Base Range</th><th>Total Comp (with bonus/equity)</th></tr>
+            <tr><td>Senior PM (Biotech)</td><td>$160K to $220K</td><td>$200K to $280K</td></tr>
+            <tr><td>AI Product Manager</td><td>$170K to $240K</td><td>$220K to $320K</td></tr>
+            <tr><td>Strategic Planning Director</td><td>$180K to $260K</td><td>$230K to $340K</td></tr>
+            <tr><td>PM (Defense Tech, e.g. Anduril)</td><td>$170K to $240K</td><td>$220K to $350K</td></tr>
+            <tr><td>TPM (Tech)</td><td>$150K to $210K</td><td>$185K to $270K</td></tr>
+            <tr><td>PM (SaaS/Enterprise)</td><td>$140K to $190K</td><td>$175K to $240K</td></tr>
+            <tr><td>QC Associate (Entry Biotech)</td><td>$70K to $95K</td><td>$80K to $110K</td></tr>
+            <tr><td>Adjunct Professor (per course)</td><td>$3K to $6K/course</td><td>$12K to $36K/year (2 to 6 courses)</td></tr>
+            <tr><td>Government PM (GS 13/14)</td><td>$110K to $176K</td><td>$110K to $176K + FERS pension</td></tr>
+          </table>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:12px;">
+          <div class="card-title" style="margin-bottom:10px;">Negotiation Scripts</div>
+          <div id="salary-scripts">
+            <div class="coach-section" style="background:var(--green-light);border-color:var(--green);">
+              <div class="coach-title" style="color:var(--green);">Script 1: When They Ask Your Salary Expectations First</div>
+              <div class="coach-text">"I am focused on finding the right role where I can make a meaningful impact. Based on my research into comparable positions for someone with my background, including dual graduate degrees, seven years of product management experience, and specialized AI/ML expertise, I would expect the total compensation to be in the range of [range]. But I am open to discussing how the full package comes together, including base, bonus, equity, and benefits. What range did you have budgeted for this role?"</div>
+            </div>
+            <div class="coach-section" style="background:var(--blue-light);border-color:var(--blue);">
+              <div class="coach-title" style="color:var(--blue);">Script 2: Countering a Low Offer</div>
+              <div class="coach-text">"Thank you for the offer. I am genuinely excited about this role and the team. I want to be transparent: based on my market research and the value I expect to bring, particularly my combination of biotech domain expertise and AI product experience, I was expecting the base to be closer to [target]. I have [specific proof point, e.g., scaled a platform from 20 to 325 users, built AI systems serving 340+ stakeholders]. Would there be flexibility to bridge that gap, whether through base, signing bonus, or equity?"</div>
+            </div>
+            <div class="coach-section" style="background:var(--yellow-light);border-color:var(--yellow);">
+              <div class="coach-title" style="color:#856404;">Script 3: Leveraging a Competing Offer</div>
+              <div class="coach-text">"I want to be straightforward with you. I have received another offer that is competitive, but [Company] is my strong preference because of [specific reason: mission, team, growth]. The other offer is at [amount or range]. Is there room to match or come closer on [specific element]? I want to make this work because I believe I can make a real impact here."</div>
+            </div>
+            <div class="coach-section" style="background:var(--purple-light);border-color:var(--purple);">
+              <div class="coach-title" style="color:var(--purple);">Script 4: Negotiating Beyond Base Salary</div>
+              <div class="coach-text">"If there is limited flexibility on base salary, I would love to explore other elements of the package. Specifically, I am interested in: signing bonus to bridge the gap in year one, additional equity or RSU grants, professional development budget (conferences, certifications), flexible work arrangement (remote days or schedule), accelerated review timeline (6 months instead of 12 for first raise). Which of these would be easiest to adjust?"</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:12px;">
+          <div class="card-title" style="margin-bottom:10px;">Offer Comparison Calculator</div>
+          <div class="add-form">
+            <div class="form-group"><label>Offer 1: Company</label><input type="text" id="offer1-company" placeholder="Company name"></div>
+            <div class="form-group"><label>Offer 2: Company</label><input type="text" id="offer2-company" placeholder="Company name"></div>
+            <div class="form-group"><label>Base Salary</label><input type="number" id="offer1-base" placeholder="e.g. 180000"></div>
+            <div class="form-group"><label>Base Salary</label><input type="number" id="offer2-base" placeholder="e.g. 160000"></div>
+            <div class="form-group"><label>Annual Bonus %</label><input type="number" id="offer1-bonus" placeholder="e.g. 15"></div>
+            <div class="form-group"><label>Annual Bonus %</label><input type="number" id="offer2-bonus" placeholder="e.g. 10"></div>
+            <div class="form-group"><label>Equity/RSU (annual est.)</label><input type="number" id="offer1-equity" placeholder="e.g. 50000"></div>
+            <div class="form-group"><label>Equity/RSU (annual est.)</label><input type="number" id="offer2-equity" placeholder="e.g. 30000"></div>
+            <div class="form-group"><label>Commute (min one way)</label><input type="number" id="offer1-commute" placeholder="e.g. 15"></div>
+            <div class="form-group"><label>Commute (min one way)</label><input type="number" id="offer2-commute" placeholder="e.g. 45"></div>
+          </div>
+          <button class="btn btn-primary" style="margin-top:10px;" onclick="compareOffers()">Compare Offers</button>
+          <div id="offer-comparison" style="margin-top:12px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== COMPANY WATCHLIST ===================== -->
+    <div class="panel" id="panel-watchlist">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Company Career Page Watchlist</div>
+          <button class="btn btn-primary" onclick="showModal('modal-add-watchlist')">+ Add Company</button>
+        </div>
+        <p style="font-size:12px;color:var(--gray);margin-bottom:12px;">Track company career pages and get alerted when new roles appear. Companies you watch will be highlighted in Job Discovery.</p>
+        <div id="watchlist-list"></div>
+      </div>
+      <div class="card" style="margin-top:12px;">
+        <div class="card-title" style="margin-bottom:10px;">Quick Add from Job Board</div>
+        <div class="add-form" style="margin-top:0;">
+          <div class="form-group"><label>Company Name</label><input type="text" id="quick-watch-name" placeholder="e.g. Genentech"></div>
+          <div class="form-group"><label>Career Page URL</label><input type="text" id="quick-watch-url" placeholder="https://careers.genentech.com"></div>
+        </div>
+        <button class="btn btn-primary" style="margin-top:8px;" onclick="quickAddWatch()">Add to Watchlist</button>
+      </div>
+    </div>
+
+    <!-- ===================== SETTINGS ===================== -->
+    <div class="panel" id="panel-settings">
+      <div class="card">
+        <div class="card-header"><div class="card-title">Feature Controls</div></div>
+        <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">Job Discovery</div><div class="toggle-desc">Scan job boards for matching positions</div></div><label class="toggle"><input type="checkbox" id="toggle-discovery" checked onchange="saveSettings()"><span class="slider"></span></label></div>
+        <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">Multi-Dimensional Scoring</div><div class="toggle-desc">Score jobs across 6 dimensions: title match, skills, seniority, location, company tier, freshness</div></div><label class="toggle"><input type="checkbox" id="toggle-ranking" checked onchange="saveSettings()"><span class="slider"></span></label></div>
+        <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">Cover Letter Drafting</div><div class="toggle-desc">Auto-draft cover letters for 85%+ matches</div></div><label class="toggle"><input type="checkbox" id="toggle-coverletter" checked onchange="saveSettings()"><span class="slider"></span></label></div>
+        <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">Auto Apply (Top Matches)</div><div class="toggle-desc">Auto-submit for 85%+ jobs. Default: OFF (queue for approval).</div></div><label class="toggle"><input type="checkbox" id="toggle-autoapply-top" onchange="saveSettings()"><span class="slider"></span></label></div>
+        <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">Auto Apply (All Matches)</div><div class="toggle-desc">Auto-submit all above threshold. Caution: may trigger bot detection.</div></div><label class="toggle"><input type="checkbox" id="toggle-autoapply-all" onchange="saveSettings()"><span class="slider"></span></label></div>
+        <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">Application Tracking</div><div class="toggle-desc">Track all applications with status and contacts</div></div><label class="toggle"><input type="checkbox" id="toggle-tracking" checked onchange="saveSettings()"><span class="slider"></span></label></div>
+        <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">Follow Up Reminders</div><div class="toggle-desc">Reminders 7 to 10 days after applying</div></div><label class="toggle"><input type="checkbox" id="toggle-followups" checked onchange="saveSettings()"><span class="slider"></span></label></div>
+        <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">Networking Tracker</div><div class="toggle-desc">Track daily outreach (5/day goal)</div></div><label class="toggle"><input type="checkbox" id="toggle-networking" checked onchange="saveSettings()"><span class="slider"></span></label></div>
+        <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">Interview Coach</div><div class="toggle-desc">Role-specific prep guides and mock interviews</div></div><label class="toggle"><input type="checkbox" id="toggle-coaching" checked onchange="saveSettings()"><span class="slider"></span></label></div>
+        <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">Email Notifications</div><div class="toggle-desc">Email digest of new matches and reminders</div></div><label class="toggle"><input type="checkbox" id="toggle-email" checked onchange="saveSettings()"><span class="slider"></span></label></div>
+        <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">Deduplication</div><div class="toggle-desc">Detect and merge duplicate listings across boards</div></div><label class="toggle"><input type="checkbox" id="toggle-dedup" checked onchange="saveSettings()"><span class="slider"></span></label></div>
+        <div class="toggle-row"><div class="toggle-info"><div class="toggle-label">Salary Floor Filter</div><div class="toggle-desc">Hide jobs estimated below your minimum ($100K for PM, $65K for QC)</div></div><label class="toggle"><input type="checkbox" id="toggle-salaryfloor" onchange="saveSettings()"><span class="slider"></span></label></div>
+      </div>
+      <div class="card" style="margin-top:12px;">
+        <div class="card-title" style="margin-bottom:12px;">Notification Settings</div>
+        <div class="settings-group"><label class="settings-label">Email for Notifications</label><input type="email" class="settings-input" id="settings-email" value="" onchange="saveSettings()"></div>
+        <div class="add-form" style="margin-top:0;">
+          <div class="settings-group"><label class="settings-label">Scan Frequency</label><select class="settings-input" id="settings-frequency" onchange="saveSettings()"><option value="2x">Twice Daily</option><option value="3x">Three Times Daily</option><option value="hourly">Hourly</option><option value="manual">Manual Only</option></select></div>
+          <div class="settings-group"><label class="settings-label">Min Match Score</label><select class="settings-input" id="settings-threshold" onchange="saveSettings()"><option value="50">50%+</option><option value="60" selected>60%+</option><option value="70">70%+</option><option value="85">85%+ only</option></select></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== Q&A BANK ===================== -->
+    <div class="panel" id="panel-qabank">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Q&A Bank — Application Answers</div>
+          <div style="display:flex;gap:6px;">
+            <button class="btn btn-primary" onclick="addQAEntry()">+ Add Entry</button>
+            <button class="btn btn-outline" onclick="exportQABank()">Export JSON</button>
+          </div>
+        </div>
+        <p style="font-size:12px;color:var(--gray);margin-bottom:12px;">Pre-built answers for common application questions. The engine auto-matches these to form fields.</p>
+        <div style="margin-bottom:12px;">
+          <select class="settings-input" style="width:auto;font-size:11px;padding:4px 8px;" id="qa-filter" onchange="renderQABank()">
+            <option value="all">All Categories</option>
+            <option value="personal">Personal</option>
+            <option value="experience">Experience</option>
+            <option value="behavioral">Behavioral</option>
+            <option value="technical">Technical</option>
+            <option value="compensation">Compensation</option>
+            <option value="availability">Availability</option>
+            <option value="custom">Custom</option>
+          </select>
+          <span style="font-size:11px;color:var(--gray);margin-left:8px;" id="qa-count">0 entries</span>
+        </div>
+        <div id="qa-bank-list"></div>
+      </div>
+
+      <div class="card" style="margin-top:12px;">
+        <div class="card-title" style="margin-bottom:12px;">Resume Profile</div>
+        <div id="resume-status" style="font-size:12px;color:var(--gray);margin-bottom:10px;">
+          No resume parsed yet. Upload a resume PDF/DOCX and run <code>python main.py resume --file your_resume.pdf</code>, then import engine data.
+        </div>
+        <div id="resume-profile-display"></div>
+      </div>
+    </div>
+
+    <!-- ===================== ACTIVITY LOG ===================== -->
+    <!-- ===================== RESUME VARIANTS (v4.1) ===================== -->
+    <div class="panel" id="panel-resumevariants">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Resume Variants</div>
+          <div style="display:flex;gap:6px;">
+            <select class="settings-input" style="width:auto;font-size:11px;padding:4px 8px;" id="rv-sector-filter" onchange="renderResumeVariants()">
+              <option value="all">All Sectors</option>
+              <option value="biotech">Biotech</option>
+              <option value="tech">Tech / AI</option>
+              <option value="defense">Defense</option>
+              <option value="startup">Startup</option>
+              <option value="general">General</option>
+            </select>
+            <button class="btn btn-primary" onclick="showModal('modal-add-rv')">+ Add Variant</button>
+          </div>
+        </div>
+        <table><thead><tr><th>Name</th><th>Sector</th><th>Apps</th><th>Callbacks</th><th>Interviews</th><th>Offers</th><th>Score</th><th>Status</th><th>Actions</th></tr></thead><tbody id="rv-table-body"></tbody></table>
+        <div style="margin-top:10px;font-size:11px;color:var(--gray);">Score = weighted funnel (callback=1, interview=3, offer=5, reject=-1, ghost=-2) / apps. 85% exploit best, 15% explore.</div>
+      </div>
+    </div>
+
+    <!-- ===================== COVER LETTER VARIANTS (v4.1) ===================== -->
+    <div class="panel" id="panel-clvariants">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Cover Letter Variants</div>
+          <div style="display:flex;gap:6px;">
+            <select class="settings-input" style="width:auto;font-size:11px;padding:4px 8px;" id="cl-sector-filter" onchange="renderCLVariants()">
+              <option value="all">All Sectors</option>
+              <option value="biotech">Biotech</option>
+              <option value="tech">Tech / AI</option>
+              <option value="defense">Defense</option>
+              <option value="startup">Startup</option>
+              <option value="general">General</option>
+            </select>
+            <button class="btn btn-primary" onclick="showModal('modal-add-cl-variant')">+ Add Variant</button>
+          </div>
+        </div>
+        <table><thead><tr><th>Name</th><th>Tone</th><th>Sector</th><th>Apps</th><th>Callbacks</th><th>Interviews</th><th>Score</th><th>Status</th><th>Actions</th></tr></thead><tbody id="cl-variant-table-body"></tbody></table>
+      </div>
+    </div>
+
+    <!-- ===================== A/B PERFORMANCE (v4.1) ===================== -->
+    <div class="panel" id="panel-abperformance">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">A/B Testing Performance</div>
+          <button class="btn btn-outline" onclick="importMaterialsData()">Import Engine Data</button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+          <div class="card" style="margin:0;padding:14px;">
+            <div style="font-weight:600;font-size:13px;margin-bottom:8px;">Best Resume by Sector</div>
+            <div id="ab-best-resume"></div>
+          </div>
+          <div class="card" style="margin:0;padding:14px;">
+            <div style="font-weight:600;font-size:13px;margin-bottom:8px;">Best Cover Letter by Sector</div>
+            <div id="ab-best-cl"></div>
+          </div>
+        </div>
+        <div class="card" style="margin:0;padding:14px;">
+          <div style="font-weight:600;font-size:13px;margin-bottom:8px;">Material Pairings &amp; Outcomes</div>
+          <table><thead><tr><th>Application</th><th>Resume</th><th>Cover Letter</th><th>Sector</th><th>Reason</th><th>Outcome</th><th>Actions</th></tr></thead><tbody id="ab-pairings-body"></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" id="panel-logs">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Activity Log</div>
+          <div style="display:flex;gap:6px;">
+            <select class="settings-input" style="width:auto;font-size:11px;padding:4px 8px;" id="log-type-filter" onchange="renderActionLog()">
+              <option value="all">All Types</option>
+              <option value="discovery">Discovery</option>
+              <option value="queue">Queue</option>
+              <option value="apply">Apply</option>
+              <option value="engine">Engine</option>
+              <option value="config">Config</option>
+              <option value="error">Errors</option>
+            </select>
+            <button class="btn btn-outline" onclick="data.actionLog=[];data.logs=[];saveData();renderActionLog();document.getElementById('log-list').innerHTML='';">Clear All</button>
+          </div>
+        </div>
+        <div id="action-log-feed" style="font-size:12px;font-family:'Consolas',monospace;max-height:400px;overflow-y:auto;background:#1a1a2e;color:#e0e0e0;padding:10px;border-radius:6px;margin-bottom:10px;"></div>
+        <div style="font-size:11px;color:var(--gray);margin-top:4px;">Legacy log:</div>
+        <div id="log-list" style="font-size:12px;font-family:monospace;max-height:200px;overflow-y:auto;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modals -->
+<div class="modal-overlay" id="modal-add-app">
+  <div class="modal">
+    <h2>Add Application</h2>
+    <div class="add-form">
+      <div class="form-group"><label>Company</label><input type="text" id="app-company"></div>
+      <div class="form-group"><label>Role</label><input type="text" id="app-role"></div>
+      <div class="form-group"><label>Date Applied</label><input type="date" id="app-date"></div>
+      <div class="form-group"><label>Status</label><select id="app-status"><option value="applied">Applied</option><option value="queued">Queued</option><option value="interview">Interview</option><option value="followup">Follow Up</option><option value="rejected">Rejected</option></select></div>
+      <div class="form-group"><label>Contact</label><input type="text" id="app-contact"></div>
+      <div class="form-group"><label>URL</label><input type="text" id="app-url"></div>
+    </div>
+    <div class="form-group" style="margin-top:10px;"><label>Notes</label><textarea id="app-notes" rows="2"></textarea></div>
+    <div class="modal-actions"><button class="btn btn-outline" onclick="closeModal('modal-add-app')">Cancel</button><button class="btn btn-primary" onclick="addApplication()">Add</button></div>
+  </div>
+</div>
+<div class="modal-overlay" id="modal-add-contact">
+  <div class="modal">
+    <h2>Add Networking Contact</h2>
+    <div class="add-form">
+      <div class="form-group"><label>Name</label><input type="text" id="contact-name"></div>
+      <div class="form-group"><label>Company</label><input type="text" id="contact-company"></div>
+      <div class="form-group"><label>Role/Title</label><input type="text" id="contact-role"></div>
+      <div class="form-group"><label>Status</label><select id="contact-status"><option value="sent">Request Sent</option><option value="connected">Connected</option><option value="messaged">Messaged</option><option value="replied">Replied</option><option value="call">Call Scheduled</option></select></div>
+    </div>
+    <div class="form-group" style="margin-top:10px;"><label>Notes</label><textarea id="contact-notes" rows="2"></textarea></div>
+    <div class="modal-actions"><button class="btn btn-outline" onclick="closeModal('modal-add-contact')">Cancel</button><button class="btn btn-primary" onclick="addContact()">Add</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-add-watchlist">
+  <div class="modal">
+    <h2>Add Company to Watchlist</h2>
+    <div class="add-form">
+      <div class="form-group"><label>Company Name</label><input type="text" id="watch-company-name" placeholder="e.g. Genentech"></div>
+      <div class="form-group"><label>Career Page URL</label><input type="text" id="watch-career-url" placeholder="https://careers.genentech.com"></div>
+      <div class="form-group"><label>Check Frequency</label>
+        <select id="watch-frequency"><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="manual">Manual Only</option></select>
+      </div>
+      <div class="form-group"><label>Tags</label><input type="text" id="watch-tags" placeholder="e.g. biotech, tier1, dream"></div>
+    </div>
+    <div class="form-group" style="margin-top:10px;"><label>Notes</label><textarea id="watch-notes" rows="2" placeholder="Why you're watching this company..."></textarea></div>
+    <div class="modal-actions"><button class="btn btn-outline" onclick="closeModal('modal-add-watchlist')">Cancel</button><button class="btn btn-primary" onclick="addToWatchlist()">Add to Watchlist</button></div>
+  </div>
+</div>
+<div class="modal-overlay" id="modal-gap-analysis">
+  <div class="modal" style="max-width:720px;">
+    <h2 id="gap-modal-title">Job-Resume Gap Analysis</h2>
+    <div id="gap-modal-content"></div>
+    <div class="modal-actions"><button class="btn btn-outline" onclick="closeModal('modal-gap-analysis')">Close</button><button class="btn btn-primary" onclick="copyGapKeywords()">Copy Keywords</button></div>
+  </div>
+</div>
+<div class="modal-overlay" id="modal-pitch">
+  <div class="modal" style="max-width:720px;">
+    <h2 id="pitch-modal-title">Why You're Perfect for This Role</h2>
+    <div id="pitch-modal-content"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('modal-pitch')">Close</button>
+      <button class="btn btn-outline" onclick="copyPitchLinkedIn()">Copy for LinkedIn</button>
+      <button class="btn btn-primary" onclick="usePitchInCL()">Use in Cover Letter</button>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="modal-email-draft">
+  <div class="modal" style="max-width:640px;">
+    <h2 id="email-modal-title">Follow-Up Email Draft</h2>
+    <div id="email-modal-content"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('modal-email-draft')">Close</button>
+      <button class="btn btn-primary" onclick="copyEmailDraft()">Copy to Clipboard</button>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="modal-research">
+  <div class="modal" style="max-width:720px;">
+    <h2 id="research-modal-title">Company Research</h2>
+    <div id="research-modal-content"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('modal-research')">Close</button>
+      <button class="btn btn-primary" onclick="prepInterviewFromResearch()">Prep for Interview</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Add Resume Variant -->
+<div class="modal-overlay" id="modal-add-rv">
+  <div class="modal">
+    <h2>Add Resume Variant</h2>
+    <div class="add-form">
+      <div class="form-group"><label>Name</label><input type="text" id="rv-name" placeholder="e.g. Biotech PM Focus"></div>
+      <div class="form-group"><label>Sector</label><select id="rv-sector"><option value="general">General</option><option value="biotech">Biotech</option><option value="tech">Tech / AI</option><option value="defense">Defense</option><option value="startup">Startup</option><option value="education">Education</option></select></div>
+      <div class="form-group"><label>File Path</label><input type="text" id="rv-filepath" placeholder="/path/to/resume.pdf"></div>
+      <div class="form-group"><label>Description</label><textarea id="rv-desc" rows="2" placeholder="Key emphasis areas..."></textarea></div>
+    </div>
+    <div class="modal-actions"><button class="btn btn-outline" onclick="closeModal('modal-add-rv')">Cancel</button><button class="btn btn-primary" onclick="createResumeVariant()">Create</button></div>
+  </div>
+</div>
+
+<!-- Modal: Add CL Variant -->
+<div class="modal-overlay" id="modal-add-cl-variant">
+  <div class="modal" style="max-width:600px;">
+    <h2>Add Cover Letter Variant</h2>
+    <div class="add-form">
+      <div class="form-group"><label>Name</label><input type="text" id="clv-name" placeholder="e.g. Startup Enthusiast"></div>
+      <div class="form-group"><label>Tone</label><select id="clv-tone"><option value="professional">Professional</option><option value="enthusiastic">Enthusiastic</option><option value="technical">Technical</option><option value="storytelling">Storytelling</option></select></div>
+      <div class="form-group"><label>Sector</label><select id="clv-sector"><option value="general">General</option><option value="biotech">Biotech</option><option value="tech">Tech / AI</option><option value="defense">Defense</option><option value="startup">Startup</option></select></div>
+      <div class="form-group"><label>Template Text</label><textarea id="clv-template" rows="5" placeholder="Dear Hiring Manager..."></textarea></div>
+    </div>
+    <div class="modal-actions"><button class="btn btn-outline" onclick="closeModal('modal-add-cl-variant')">Cancel</button><button class="btn btn-primary" onclick="createCLVariant()">Create</button></div>
+  </div>
+</div>
+
+<!-- Modal: Record Outcome -->
+<div class="modal-overlay" id="modal-record-outcome">
+  <div class="modal">
+    <h2>Record Application Outcome</h2>
+    <input type="hidden" id="outcome-pairing-id">
+    <input type="hidden" id="outcome-app-idx">
+    <div class="add-form">
+      <div class="form-group"><label>Company</label><input type="text" id="outcome-company" readonly></div>
+      <div class="form-group"><label>Outcome</label><select id="outcome-value"><option value="callback">Callback</option><option value="interview">Interview</option><option value="offer">Offer</option><option value="rejected">Rejected</option><option value="ghosted">Ghosted</option></select></div>
+    </div>
+    <div class="modal-actions"><button class="btn btn-outline" onclick="closeModal('modal-record-outcome')">Cancel</button><button class="btn btn-primary" onclick="submitOutcome()">Record</button></div>
+  </div>
+</div>
+
+<script>
+// ===================== DATA =====================
+let data = { jobs: [], applications: [], coverLetters: [], followups: [], contacts: [], logs: [],
+  watchlist: [],
+  pitches: [],
+  companyResearch: [],
+  momentum: { weeklyTarget: 6, streakDays: 0, lastActiveDate: null },
+  emailTemplates: [],
+  automationConfig: { mode: 'semi-auto', strategy: 'balanced', dailyTarget: 25 },
+  applicationQueue: [],
+  qaBank: [],
+  actionLog: [],
+  resumeProfile: null,
+  materialVariants: { resume_variants: [], cover_letter_variants: [], material_pairings: [] },
+  settings: {
+    name: '', email: '', frequency: '2x', threshold: 60,
+    features: { discovery:true, ranking:true, coverletter:true, autoapplyTop:false, autoapplyAll:false, tracking:true, followups:true, networking:true, email:true, coaching:true, dedup:true, salaryfloor:false },
+    boards: { linkedin:true, indeed:true, glassdoor:true, ziprecruiter:true, monster:true, simplyhired:true }
+}};
+
+// ===================== SECURITY: HTML ESCAPING =====================
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  const div = document.createElement('div');
+  div.textContent = String(str);
+  return div.innerHTML;
+}
+
+// ===================== PERSONAL BRAND POSITIONING (Marketing Framework) =====================
+// Brand-focused job search strategy:
+// - Brand Identity: AI-savvy Product Manager with biotech depth
+// - USP: Dual-degree (MBA + MS Biotech) bridge between science and strategy
+// - Value Propositions mapped per audience segment
+const BRAND = {
+  tagline: "Where Biotech Meets AI Product Strategy",
+  usp: "One of few PMs who can speak fluently to data scientists, bench researchers, and C-suite executives.",
+  valueProps: {
+    biotech: "Biotech domain expertise with hands-on lab background and regulatory awareness, combined with modern AI/ML product skills.",
+    tech: "Technical PM who builds AI systems, writes Python, and understands the full ML pipeline from data to deployment.",
+    defense: "Security-cleared program manager experienced with complex stakeholder environments and high-stakes delivery.",
+    startup: "Scrappy builder who scaled platforms from 20 to 325+ users and thrives in ambiguity.",
+    education: "Practitioner-educator who brings real-world product and AI case studies into the classroom."
+  },
+  proofPoints: [
+    "Scaled AI analytics platform from 20 to 325 active users",
+    "Built LLM-powered systems serving 340+ cross-functional stakeholders",
+    "Dual graduate degrees: MBA + MS Biotechnology",
+    "7 years product management across biotech, SaaS, and defense",
+    "Led cross-functional teams of 8-15 across engineering, data science, and operations"
+  ]
+};
+
+// ===================== SKILL INVENTORY (for Gap Analysis & Pitch Generator) =====================
+const SKILL_INVENTORY = {
+  hardSkills: ["product management","product strategy","roadmapping","agile","scrum","jira","confluence","sql","python","aws","langchain","llm","generative ai","machine learning","data governance","analytics","tableau","power bi","a/b testing","user research","market analysis","competitive analysis","api design","data pipelines","etl","bioinformatics","genomics","clinical trials","gmp","regulatory compliance","sop","quality control","project management","budgeting","vendor management","stakeholder management"],
+  softSkills: ["cross-functional leadership","executive communication","strategic thinking","problem solving","team building","mentoring","negotiation","presentation","storytelling","conflict resolution","change management","decision making"],
+  certifications: ["MBA","MS Biotechnology","AWS Cloud Practitioner"],
+  tools: ["Python","SQL","AWS","LangChain","Jira","Confluence","Tableau","Power BI","Figma","Miro","Notion","Slack","Git","Docker","Airflow","BigQuery","Snowflake","Excel"],
+  uniqueCombinations: [
+    "Biotech domain + AI/ML product management",
+    "Dual graduate degrees (MBA + MS Biotech)",
+    "Lab bench to boardroom career arc",
+    "Defense clearance + commercial tech experience",
+    "Scaled AI platform from 0 to 325 users"
+  ],
+  proofPoints: BRAND.proofPoints
+};
+
+// ===================== IMPROVED MATCHING ENGINE =====================
+const SCORING = {
+  titleKeywords: {
+    "product manager": 25, "senior product manager": 28, "ai product manager": 30,
+    "program manager": 22, "technical program manager": 24, "project manager": 18,
+    "data governance": 20, "strategic planning": 22, "quality control": 15,
+    "adjunct professor": 12, "adjunct faculty": 12, "lecturer": 12,
+    "product owner": 18, "director": 20, "analyst": 10
+  },
+  skillKeywords: {
+    high: ["product management","ai","machine learning","biotechnology","bioinformatics","data governance","analytics","saas","agile","scrum","roadmap","stakeholder","llm","generative ai","python","aws","langchain","cross functional"],
+    medium: ["mba","quality control","regulatory","compliance","clinical","defense","aerospace","government","adjunct","startup","digital","platform","cloud","sql"],
+    low: ["leadership","communication","excel","tableau","documentation","team","collaboration"]
+  },
+  seniorityMap: {
+    "intern": -20, "junior": -10, "associate": 0, "senior associate": 5,
+    "mid": 10, "senior": 15, "lead": 15, "principal": 12,
+    "manager": 15, "senior manager": 18, "director": 18, "vp": 10, "executive": 5
+  },
+  locationScores: {
+    "remote": 15, "hybrid": 10
+  }, // Populated from user config — run setup wizard
+  companyTier: {
+    tier1: ["amgen","genentech","roche","gilead","moderna","illumina","northrop grumman","boeing","spacex","anduril","google","snap","disney","hulu","tempus","recursion","benchling"],
+    tier2: ["takeda","abbvie","edwards lifesciences","medtronic","baxter","raytheon","lockheed martin","l3harris","aerovironment","the trade desk","riot games","flatiron health"],
+    tier3: ["sanisure","pbs biotech","atara","capsida","hygiena","patagonia","spirent","teradyne","keysight","turion space"]
+  }
+};
+
+function scoreJob(job) {
+  let titleScore = 0, skillScore = 0, seniorityScore = 0, locationScore = 0, companyScore = 0, freshnessScore = 0;
+  const title = (job.title || "").toLowerCase();
+  const desc = (job.description || "").toLowerCase();
+  const company = (job.company || "").toLowerCase();
+  const location = (job.location || "").toLowerCase();
+  const text = `${title} ${desc}`;
+
+  // 1. Title Match (0-30)
+  for (const [kw, pts] of Object.entries(SCORING.titleKeywords)) {
+    if (title.includes(kw)) { titleScore = Math.max(titleScore, pts); }
+  }
+
+  // 2. Skills Match (0-25)
+  let skillHits = 0, skillMax = 0;
+  for (const kw of SCORING.skillKeywords.high) {
+    skillMax++;
+    if (text.includes(kw)) skillHits++;
+  }
+  for (const kw of SCORING.skillKeywords.medium) {
+    skillMax++;
+    if (text.includes(kw)) skillHits += 0.6;
+  }
+  for (const kw of SCORING.skillKeywords.low) {
+    skillMax++;
+    if (text.includes(kw)) skillHits += 0.3;
+  }
+  skillScore = Math.min(25, Math.round((skillHits / Math.max(skillMax * 0.3, 1)) * 25));
+
+  // 3. Seniority Match (0-18)
+  for (const [level, pts] of Object.entries(SCORING.seniorityMap)) {
+    if (title.includes(level)) { seniorityScore = Math.max(seniorityScore, pts); }
+  }
+  seniorityScore = Math.max(0, Math.min(18, seniorityScore));
+
+  // 4. Location Match (0-20)
+  for (const [loc, pts] of Object.entries(SCORING.locationScores)) {
+    if (location.includes(loc)) { locationScore = Math.max(locationScore, pts); }
+  }
+
+  // 5. Company Tier (0-10)
+  if (SCORING.companyTier.tier1.some(c => company.includes(c))) companyScore = 10;
+  else if (SCORING.companyTier.tier2.some(c => company.includes(c))) companyScore = 7;
+  else if (SCORING.companyTier.tier3.some(c => company.includes(c))) companyScore = 5;
+  else companyScore = 3;
+
+  // 6. Freshness (0-7)
+  if (job.posted) {
+    const days = Math.floor((Date.now() - new Date(job.posted).getTime()) / 86400000);
+    if (days <= 2) freshnessScore = 7;
+    else if (days <= 7) freshnessScore = 5;
+    else if (days <= 14) freshnessScore = 3;
+    else freshnessScore = 1;
+  } else { freshnessScore = 3; }
+
+  const total = Math.min(100, titleScore + skillScore + seniorityScore + locationScore + companyScore + freshnessScore);
+  return { total, breakdown: { title: titleScore, skills: skillScore, seniority: seniorityScore, location: locationScore, company: companyScore, freshness: freshnessScore } };
+}
+
+function categorizeSector(job) {
+  const t = `${job.title} ${job.company} ${job.description || ""}`.toLowerCase();
+  if (/(biotech|pharma|clinical|therapeutics|bioscience|amgen|genentech|gilead|moderna|genomics)/.test(t)) return "biotech";
+  if (/(defense|aerospace|clearance|military|anduril|northrop|boeing|raytheon|lockheed)/.test(t)) return "defense";
+  if (/(startup|seed|series [ab]|early.stage|wellfound|y combinator)/.test(t)) return "startup";
+  if (/(adjunct|professor|faculty|lecturer|university|college|education)/.test(t)) return "education";
+  if (/(government|federal|state|usajobs|gs.1[0-5]|public sector)/.test(t)) return "government";
+  if (/remote/.test(t)) return "remote";
+  return "tech";
+}
+
+// ===================== URL BUILDER — FIX: Direct Listing URLs =====================
+// The key fix: each job object must carry its ACTUAL listing URL (job.url),
+// NOT the generic career page. The "View Details" button opens job.url directly.
+function getJobUrl(job) {
+  // Priority: 1) job.url (specific listing), 2) job.apply_url, 3) constructed fallback
+  if (job.url && job.url.startsWith("http")) return job.url;
+  if (job.apply_url && job.apply_url.startsWith("http")) return job.apply_url;
+  if (job.listing_url && job.listing_url.startsWith("http")) return job.listing_url;
+  // Fallback: construct a search URL that will land close to the listing
+  const q = encodeURIComponent(`${job.title} ${job.company}`);
+  if (job.source === "indeed" || job.board === "indeed") return `https://www.indeed.com/jobs?q=${q}`;
+  if (job.source === "linkedin" || job.board === "linkedin") return `https://www.linkedin.com/jobs/search/?keywords=${q}`;
+  if (job.source === "glassdoor" || job.board === "glassdoor") return `https://www.glassdoor.com/Job/jobs.htm?sc.keyword=${q}`;
+  return `https://www.google.com/search?q=${q}+jobs`;
+}
+
+// ===================== RENDERING =====================
+function renderJobs() {
+  const list = document.getElementById("job-list");
+  const filterMatch = document.getElementById("filter-match").value;
+  const filterSector = document.getElementById("filter-sector").value;
+  const filterFresh = document.getElementById("filter-fresh").value;
+
+  let jobs = (data.jobs || []).map(j => {
+    if (!j.scored) {
+      const s = scoreJob(j);
+      j.match = s.total;
+      j.breakdown = s.breakdown;
+      j.sector = j.sector || categorizeSector(j);
+      j.scored = true;
+    }
+    return j;
+  }).sort((a, b) => b.match - a.match);
+
+  // Apply filters
+  if (filterMatch === "high") jobs = jobs.filter(j => j.match >= 85);
+  else if (filterMatch === "medium") jobs = jobs.filter(j => j.match >= 60 && j.match < 85);
+  else if (filterMatch === "low") jobs = jobs.filter(j => j.match < 60);
+  if (filterSector !== "all") jobs = jobs.filter(j => j.sector === filterSector);
+  if (filterFresh !== "all") {
+    const cutoff = filterFresh === "48h" ? 2 : 7;
+    jobs = jobs.filter(j => {
+      if (!j.posted) return false;
+      return Math.floor((Date.now() - new Date(j.posted).getTime()) / 86400000) <= cutoff;
+    });
+  }
+
+  if (jobs.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div class="icon">&#128269;</div><h3>No jobs found</h3><p>Run a scan or add jobs manually to get started.</p></div>`;
+    return;
+  }
+
+  list.innerHTML = jobs.map((j, i) => {
+    const matchClass = j.match >= 85 ? "high-match" : j.match >= 60 ? "medium-match" : "low-match";
+    const matchBadge = j.match >= 85 ? "match-high" : j.match >= 60 ? "match-medium" : "match-low";
+    const freshDays = j.posted ? Math.floor((Date.now() - new Date(j.posted).getTime()) / 86400000) : null;
+    const freshBadge = freshDays !== null ? (freshDays <= 2 ? "fresh-hot" : freshDays <= 7 ? "fresh-warm" : "fresh-cool") : "";
+    const freshText = freshDays !== null ? (freshDays === 0 ? "Today" : freshDays === 1 ? "1d ago" : `${freshDays}d ago`) : "";
+    // FIX: Use getJobUrl() for the actual specific listing URL
+    const jobUrl = getJobUrl(j);
+    // Marketing: show which value prop aligns
+    const sectorVP = BRAND.valueProps[j.sector] || BRAND.valueProps.tech;
+    const bd = j.breakdown || {};
+
+    return `<div class="job-card ${matchClass}">
+      <div style="display:flex;justify-content:space-between;align-items:start;">
+        <div>
+          <div class="job-title">${escapeHtml(j.title || "Untitled")}</div>
+          <div class="job-company">${escapeHtml(j.company || "Unknown")}</div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          ${freshText ? `<span class="freshness-indicator ${freshBadge}">${freshText}</span>` : ""}
+          <span class="match-score ${matchBadge}">${j.match}%</span>
+        </div>
+      </div>
+      <div class="job-meta">
+        <span>${escapeHtml(j.location || "Location N/A")}</span>
+        <span>${j.sector ? j.sector.charAt(0).toUpperCase() + j.sector.slice(1) : "General"}</span>
+        ${j.salary ? `<span class="salary-range">${escapeHtml(j.salary)}</span>` : ""}
+        ${j.source || j.board ? `<span>via ${escapeHtml(j.source || j.board)}</span>` : ""}
+      </div>
+      <div class="score-breakdown">
+        <div class="score-dim"><div class="val">${bd.title || 0}</div><div class="lbl">Title</div></div>
+        <div class="score-dim"><div class="val">${bd.skills || 0}</div><div class="lbl">Skills</div></div>
+        <div class="score-dim"><div class="val">${bd.seniority || 0}</div><div class="lbl">Level</div></div>
+        <div class="score-dim"><div class="val">${bd.location || 0}</div><div class="lbl">Location</div></div>
+        <div class="score-dim"><div class="val">${bd.company || 0}</div><div class="lbl">Company</div></div>
+        <div class="score-dim"><div class="val">${bd.freshness || 0}</div><div class="lbl">Fresh</div></div>
+      </div>
+      ${isWatchedCompany(j.company) ? '<span class="watched-pill">WATCHED</span>' : ''}
+      <div style="margin-top:6px;padding:6px 8px;background:var(--purple-light);border-radius:6px;font-size:10px;color:var(--purple);">
+        <strong>Your positioning angle:</strong> ${escapeHtml(sectorVP)}
+      </div>
+      <div class="job-actions">
+        <a href="${jobUrl}" target="_blank" rel="noopener" class="btn btn-primary" style="text-decoration:none;">View Listing</a>
+        <button class="btn btn-outline" onclick="queueJob(${i})">Queue to Apply</button>
+        <button class="btn btn-success" onclick="markApplied(${i})">Mark Applied</button>
+        <button class="btn btn-purple" onclick="generateCLForJob(${i})">Draft CL</button>
+        <button class="btn btn-outline" style="color:var(--green);border-color:var(--green);" onclick="analyzeGap(${i})">Analyze Fit</button>
+        <button class="btn btn-outline" style="color:var(--purple);border-color:var(--purple);" onclick="generatePitch(${i})">Why Me</button>
+        <button class="btn btn-outline" style="color:#0369A1;border-color:#0369A1;" onclick="researchCompany('${(j.company||'').replace(/'/g,"\\'")}')">Research</button>
+        ${!isWatchedCompany(j.company) ? `<button class="btn btn-outline" style="font-size:10px;" onclick="watchFromJob(${i})">Watch Company</button>` : ''}
+        <button class="btn btn-danger" onclick="dismissJob(${i})">Dismiss</button>
+      </div>
+    </div>`;
+  }).join("");
+
+  document.getElementById("badge-discover").textContent = jobs.length;
+}
+
+// ===================== JOB ACTIONS =====================
+function queueJob(idx) {
+  const job = data.jobs[idx];
+  if (!job) return;
+  const app = { company: job.company, role: job.title, date: new Date().toISOString().slice(0,10), status: "queued", url: getJobUrl(job), contact: "", notes: `Match: ${job.match}% | Sector: ${job.sector}` };
+  data.applications.push(app);
+  // Also add to v4 applicationQueue
+  addToQueue(idx);
+  addLog(`Queued: ${job.title} at ${job.company}`);
+  saveData(); updateStats(); renderTracker();
+}
+
+function markApplied(idx) {
+  const job = data.jobs[idx];
+  if (!job) return;
+  const app = { company: job.company, role: job.title, date: new Date().toISOString().slice(0,10), status: "applied", url: getJobUrl(job), contact: "", notes: `Match: ${job.match}% | Auto-marked from discovery` };
+  data.applications.push(app);
+  // Add follow-up reminder (7 days)
+  data.followups.push({ company: job.company, role: job.title, dueDate: new Date(Date.now() + 7*86400000).toISOString().slice(0,10), type: "followup", done: false });
+  addLog(`Applied: ${job.title} at ${job.company}`);
+  saveData(); updateStats(); renderTracker(); renderFollowups();
+  alert(`Marked as applied: "${job.title}" at ${job.company}`);
+}
+
+function dismissJob(idx) {
+  data.jobs.splice(idx, 1);
+  addLog("Dismissed a job listing.");
+  saveData(); renderJobs(); updateStats();
+}
+
+function generateCLForJob(idx) {
+  const job = data.jobs[idx];
+  if (!job) return;
+  document.getElementById("cl-job-title").value = job.title || "";
+  document.getElementById("cl-company").value = job.company || "";
+  document.getElementById("cl-jd").value = job.description || "";
+  // Auto-detect sector for tone
+  const sec = job.sector || "tech";
+  const sectorMap = { biotech: "biotech", tech: "tech", defense: "defense", startup: "startup", education: "education", government: "government" };
+  const selVal = sectorMap[sec] || "tech";
+  const selEl = document.getElementById("cl-sector");
+  for (let opt of selEl.options) { if (opt.value === selVal) { selEl.value = selVal; break; } }
+  showPanel("coverletters");
+}
+
+// ===================== APPLICATION TRACKER =====================
+function renderTracker() {
+  const tbody = document.getElementById("tracker-body");
+  if (!data.applications || data.applications.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--gray);padding:20px;">No applications tracked yet. Add one or mark a discovered job as applied.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = data.applications.map((a, i) => {
+    const statusClass = `status-${a.status}`;
+    const appUrl = a.url || "#";
+    return `<tr>
+      <td><a href="${appUrl}" target="_blank" style="color:var(--blue);text-decoration:none;">${escapeHtml(a.company)}</a></td>
+      <td>${escapeHtml(a.role)}</td>
+      <td>${a.date || ""}</td>
+      <td><span class="status-badge ${statusClass}">${a.status}</span></td>
+      <td>${a.followUpDate || "---"}</td>
+      <td>
+        <select style="font-size:10px;padding:2px 4px;border:1px solid #D1D5DB;border-radius:4px;" onchange="updateAppStatus(${i}, this.value)">
+          <option value="queued" ${a.status==="queued"?"selected":""}>Queued</option>
+          <option value="applied" ${a.status==="applied"?"selected":""}>Applied</option>
+          <option value="interview" ${a.status==="interview"?"selected":""}>Interview</option>
+          <option value="followup" ${a.status==="followup"?"selected":""}>Follow Up</option>
+          <option value="rejected" ${a.status==="rejected"?"selected":""}>Rejected</option>
+        </select>
+      </td>
+    </tr>`;
+  }).join("");
+}
+
+function updateAppStatus(idx, newStatus) {
+  if (data.applications[idx]) {
+    data.applications[idx].status = newStatus;
+    addLog(`Updated ${data.applications[idx].role} at ${data.applications[idx].company} to ${newStatus}`);
+    saveData(); updateStats(); renderTracker();
+  }
+}
+
+function addApplication() {
+  const app = {
+    company: document.getElementById("app-company").value,
+    role: document.getElementById("app-role").value,
+    date: document.getElementById("app-date").value || new Date().toISOString().slice(0,10),
+    status: document.getElementById("app-status").value,
+    contact: document.getElementById("app-contact").value,
+    url: document.getElementById("app-url").value,
+    notes: document.getElementById("app-notes").value
+  };
+  if (!app.company || !app.role) { alert("Company and Role are required."); return; }
+  data.applications.push(app);
+  addLog(`Added application: ${app.role} at ${app.company}`);
+  closeModal("modal-add-app");
+  saveData(); updateStats(); renderTracker();
+  // Clear form
+  ["app-company","app-role","app-date","app-contact","app-url","app-notes"].forEach(id => document.getElementById(id).value = "");
+}
+
+// ===================== COVER LETTER GENERATOR (Marketing-Informed) =====================
+function generateCoverLetter() {
+  const title = document.getElementById("cl-job-title").value;
+  const company = document.getElementById("cl-company").value;
+  const tone = document.getElementById("cl-tone").value;
+  const sector = document.getElementById("cl-sector").value;
+  const jd = document.getElementById("cl-jd").value;
+  if (!title || !company) { alert("Please enter at least a job title and company."); return; }
+
+  // Marketing principle: tailor value proposition to the audience (sector)
+  const vp = BRAND.valueProps[sector] || BRAND.valueProps.tech;
+  // Pick relevant proof points
+  const proofs = BRAND.proofPoints.slice(0, 3);
+
+  const toneStyles = {
+    confident: { greeting: "I am writing to express my strong interest", closer: "I am confident I will make an immediate impact" },
+    warm: { greeting: "I was excited to see the opening", closer: "I would welcome the opportunity to discuss how my background aligns with your team's goals" },
+    formal: { greeting: "I am writing to formally apply", closer: "I look forward to the opportunity to discuss my qualifications in greater detail" }
+  };
+  const t = toneStyles[tone] || toneStyles.confident;
+
+  const letter = `Dear Hiring Manager,
+
+${t.greeting} in the ${title} position at ${company}. ${vp}
+
+Throughout my career, I have consistently delivered measurable results that demonstrate my ability to drive product strategy and execution:
+
+- ${proofs[0]}
+- ${proofs[1]}
+- ${proofs[2]}
+
+${jd ? `Your job description resonates strongly with my experience. I bring a unique combination of technical depth (Python, AWS, LangChain, ML pipelines) and strategic business acumen (MBA, product roadmapping, stakeholder management) that maps directly to the requirements you have outlined.` : `I bring a unique combination of technical depth and strategic business acumen that I believe would be a strong fit for this role.`}
+
+${t.closer}, and I look forward to discussing how my background in ${sector === "biotech" ? "biotechnology and AI product management" : sector === "defense" ? "defense programs and technical product management" : sector === "startup" ? "building products from zero-to-one" : sector === "education" ? "bridging industry practice and academic instruction" : "product management and AI/ML"} can contribute to ${company}'s success.
+
+Sincerely,
+${data.settings?.name?.split(' ')[0] || 'Your Name'}
+MBA | MS Biotechnology
+${data.settings?.email || 'your@email.com'}`;
+
+  document.getElementById("cl-preview-text").textContent = letter;
+  document.getElementById("cl-output").style.display = "block";
+  addLog(`Generated cover letter for ${title} at ${company}`);
+}
+
+function copyCL() {
+  const text = document.getElementById("cl-preview-text").textContent;
+  navigator.clipboard.writeText(text).then(() => alert("Copied to clipboard!")).catch(() => alert("Copy failed. Please select and copy manually."));
+}
+
+function saveCL() {
+  const title = document.getElementById("cl-job-title").value;
+  const company = document.getElementById("cl-company").value;
+  const text = document.getElementById("cl-preview-text").textContent;
+  data.coverLetters.push({ title, company, text, date: new Date().toISOString().slice(0,10) });
+  saveData(); renderCLLibrary();
+  addLog(`Saved cover letter for ${title} at ${company}`);
+}
+
+function renderCLLibrary() {
+  const lib = document.getElementById("cl-library");
+  if (!data.coverLetters || data.coverLetters.length === 0) {
+    lib.innerHTML = `<div class="empty-state"><p>No saved cover letters yet.</p></div>`;
+    return;
+  }
+  lib.innerHTML = data.coverLetters.map((cl, i) => `
+    <div class="card" style="margin-bottom:8px;padding:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div><strong>${escapeHtml(cl.title)}</strong> at ${escapeHtml(cl.company)} <span style="font-size:10px;color:var(--gray);">(${cl.date})</span></div>
+        <div style="display:flex;gap:4px;">
+          <button class="btn btn-outline" onclick="document.getElementById('cl-preview-text').textContent=data.coverLetters[${i}].text;document.getElementById('cl-output').style.display='block';">Preview</button>
+          <button class="btn btn-danger" onclick="data.coverLetters.splice(${i},1);saveData();renderCLLibrary();">Delete</button>
+        </div>
+      </div>
+    </div>
+  `).join("");
+}
+
+// ===================== FOLLOW UPS =====================
+function renderFollowups() {
+  const list = document.getElementById("followup-list");
+  const fups = (data.followups || []).filter(f => !f.done).sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+  if (fups.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div class="icon">&#128276;</div><h3>No follow ups yet</h3><p>Follow ups appear as you track applications.</p></div>`;
+    document.getElementById("badge-followups").style.display = "none";
+    return;
+  }
+  document.getElementById("badge-followups").style.display = "";
+  document.getElementById("badge-followups").textContent = fups.length;
+  const now = Date.now();
+  list.innerHTML = fups.map((f, i) => {
+    const due = new Date(f.dueDate).getTime();
+    const daysLeft = Math.ceil((due - now) / 86400000);
+    const urgency = daysLeft <= 0 ? "followup-urgent" : daysLeft <= 3 ? "followup-soon" : "followup-later";
+    const label = daysLeft <= 0 ? "OVERDUE" : daysLeft === 1 ? "Tomorrow" : `${daysLeft} days`;
+    return `<div class="followup-item ${urgency}">
+      <div style="flex:1;"><strong>${escapeHtml(f.role)}</strong> at ${escapeHtml(f.company)}<br><span style="font-size:11px;color:var(--gray);">Due: ${f.dueDate} (${label})</span></div>
+      <button class="btn btn-purple" style="font-size:10px;" onclick="draftFollowUpEmail(${i},'checkin')">Draft Email</button>
+      <button class="btn btn-outline" style="font-size:10px;" onclick="data.followups[${i}].done=true;saveData();renderFollowups();updateStats();">Done</button>
+    </div>`;
+  }).join("");
+}
+
+// ===================== NETWORKING =====================
+function renderNetworking() {
+  const list = document.getElementById("network-list");
+  if (!data.contacts || data.contacts.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div class="icon">&#129309;</div><h3>Start networking!</h3><p>Goal: 5 new connections per day.</p></div>`;
+    document.getElementById("net-today").textContent = "0";
+    document.getElementById("net-week").textContent = "0";
+    document.getElementById("net-pending").textContent = "0";
+    document.getElementById("net-total").textContent = "0";
+    return;
+  }
+  const today = new Date().toISOString().slice(0,10);
+  const weekAgo = new Date(Date.now() - 7*86400000).toISOString().slice(0,10);
+  const todayCount = data.contacts.filter(c => c.date === today).length;
+  const weekCount = data.contacts.filter(c => c.date >= weekAgo).length;
+  const pendingCount = data.contacts.filter(c => c.status === "sent" || c.status === "messaged").length;
+  document.getElementById("net-today").textContent = todayCount;
+  document.getElementById("net-week").textContent = weekCount;
+  document.getElementById("net-pending").textContent = pendingCount;
+  document.getElementById("net-total").textContent = data.contacts.length;
+
+  list.innerHTML = data.contacts.map((c, i) => {
+    const initials = (c.name || "??").split(" ").map(n => n[0]).join("").toUpperCase().slice(0,2);
+    return `<div class="network-card">
+      <div class="network-avatar">${initials}</div>
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:600;">${escapeHtml(c.name)}</div>
+        <div style="font-size:11px;color:var(--gray);">${escapeHtml(c.role || "")} at ${escapeHtml(c.company || "")}</div>
+        <div style="font-size:10px;color:var(--gray);margin-top:2px;">${escapeHtml(c.notes || "")}</div>
+      </div>
+      <div>
+        <span class="status-badge status-${c.status === "connected" || c.status === "replied" || c.status === "call" ? "interview" : c.status === "sent" || c.status === "messaged" ? "applied" : "queued"}">${c.status}</span>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function addContact() {
+  const contact = {
+    name: document.getElementById("contact-name").value,
+    company: document.getElementById("contact-company").value,
+    role: document.getElementById("contact-role").value,
+    status: document.getElementById("contact-status").value,
+    notes: document.getElementById("contact-notes").value,
+    date: new Date().toISOString().slice(0,10)
+  };
+  if (!contact.name) { alert("Name is required."); return; }
+  data.contacts.push(contact);
+  addLog(`Added contact: ${contact.name} at ${contact.company}`);
+  closeModal("modal-add-contact");
+  saveData(); updateStats(); renderNetworking();
+  ["contact-name","contact-company","contact-role","contact-notes"].forEach(id => document.getElementById(id).value = "");
+}
+
+// ===================== INTERVIEW COACH (Marketing: Storytelling Framework) =====================
+function generateCoachingGuide() {
+  const company = document.getElementById("coach-company").value;
+  const roleKey = document.getElementById("coach-role").value;
+  if (!roleKey) return;
+  const output = document.getElementById("coaching-output");
+
+  const guides = {
+    "pm-biotech": { name: "Product Manager (Biotech/Pharma)", questions: ["How would you prioritize features for a clinical data platform?","Describe a time you navigated regulatory constraints in product development.","How do you bridge communication between data scientists and business stakeholders?"], angle: BRAND.valueProps.biotech },
+    "pm-ai": { name: "AI Product Manager", questions: ["Walk me through how you would build an AI-powered analytics product from 0 to 1.","How do you evaluate ML model performance for product decisions?","Describe your experience with LLMs in production."], angle: BRAND.valueProps.tech },
+    "pm-tech": { name: "Product Manager (Tech/SaaS)", questions: ["How do you define and measure product-market fit?","Describe your approach to a product launch.","How do you handle competing stakeholder priorities?"], angle: BRAND.valueProps.tech },
+    "pm-defense": { name: "Program Manager (Defense/Aerospace)", questions: ["How do you manage programs under strict compliance requirements?","Describe a complex multi-stakeholder delivery.","How do you balance innovation with risk management?"], angle: BRAND.valueProps.defense },
+    "strategy": { name: "Strategic Planning Director", questions: ["How would you develop a 3-year strategic roadmap?","Describe how you have used data to inform strategic decisions.","How do you align cross-functional teams around a shared vision?"], angle: BRAND.valueProps.biotech },
+    "data-gov": { name: "Data Governance Manager", questions: ["How do you establish data quality standards across an organization?","Describe your approach to data lifecycle management.","How do you handle vendor data integration challenges?"], angle: BRAND.valueProps.biotech },
+    "qc": { name: "Quality Control Associate", questions: ["Describe your experience with GMP/GLP environments.","How do you handle out-of-spec results?","What quality systems have you worked with?"], angle: "Lab-trained biotechnologist with attention to detail and regulatory awareness." },
+    "adjunct": { name: "Adjunct Professor", questions: ["How do you bring real-world experience into the classroom?","Describe your teaching philosophy.","How do you engage students with diverse backgrounds?"], angle: BRAND.valueProps.education },
+    "tpm": { name: "Technical Program Manager", questions: ["How do you coordinate across engineering teams with competing priorities?","Describe a technically complex program you managed.","How do you handle scope creep?"], angle: BRAND.valueProps.tech },
+    "govt-pm": { name: "Government Program Manager", questions: ["How do you navigate the federal procurement process?","Describe your experience with government compliance frameworks.","How do you manage programs across multiple agencies?"], angle: BRAND.valueProps.defense }
+  };
+
+  const guide = guides[roleKey];
+  if (!guide) return;
+
+  output.innerHTML = `
+    <div class="coach-section">
+      <div class="coach-title">Your Positioning Angle for ${guide.name}${company ? ` at ${company}` : ""}</div>
+      <div class="coach-text">${guide.angle}</div>
+    </div>
+    <div class="coach-section" style="background:var(--green-light);border-color:var(--green);">
+      <div class="coach-title" style="color:var(--green);">STAR Story Bank (Key Proof Points)</div>
+      <div class="coach-text">${BRAND.proofPoints.map(p => `<div style="margin:4px 0;">&#10003; ${p}</div>`).join("")}</div>
+    </div>
+    <div class="card-title" style="margin:14px 0 8px;">Likely Questions</div>
+    ${guide.questions.map((q, i) => `
+      <div class="qa-card">
+        <div class="qa-question">${i+1}. ${q}</div>
+        <div class="qa-hint">Tip: Use STAR method (Situation, Task, Action, Result) and tie back to a proof point above.</div>
+      </div>
+    `).join("")}
+    <div class="coach-section" style="margin-top:12px;background:var(--blue-light);border-color:var(--blue);">
+      <div class="coach-title" style="color:var(--blue);">Your Closing Statement (Brand Positioning)</div>
+      <div class="coach-text">"${BRAND.usp} I bring ${BRAND.tagline.toLowerCase()} — and I am excited about the opportunity to bring that to ${company || "your team"}."</div>
+    </div>
+  `;
+  addLog(`Generated coaching guide for ${guide.name}${company ? ` at ${company}` : ""}`);
+  data.settings.coached = (data.settings.coached || 0) + 1;
+  saveData(); updateStats();
+}
+
+// ===================== MOCK INTERVIEW =====================
+function generateMockQuestions() {
+  const type = document.getElementById("mock-type").value;
+  const difficulty = document.getElementById("mock-difficulty").value;
+  if (!type) return;
+  const container = document.getElementById("mock-questions");
+
+  const questions = {
+    behavioral: {
+      standard: [
+        { q: "Tell me about a time you had to influence without authority.", hint: "Use an example of cross-functional leadership from your experience." },
+        { q: "Describe a time you dealt with ambiguity in a product decision.", hint: "Reference building a new product category or AI feature." },
+        { q: "Give an example of how you handled a difficult stakeholder.", hint: "Focus on the outcome and relationship preserved." }
+      ],
+      hard: [
+        { q: "Tell me about a time you made a decision with incomplete data that had significant consequences.", hint: "Show your analytical framework and risk assessment process." },
+        { q: "Describe a time you had to pivot a strategy mid-execution. What triggered it and what happened?", hint: "Demonstrate adaptability and data-driven decision making." }
+      ]
+    },
+    product: {
+      standard: [
+        { q: "How would you prioritize features for a new AI analytics dashboard?", hint: "Use RICE or impact/effort framework. Reference your platform scaling experience." },
+        { q: "Design a product strategy for entering a new market segment.", hint: "Show market analysis, competitive positioning, and go-to-market thinking." }
+      ],
+      hard: [
+        { q: "Your flagship product is losing market share to a competitor. Walk me through your response.", hint: "Competitive analysis, user research, rapid iteration cycle." },
+        { q: "How would you measure the success of an AI feature that has no direct revenue attribution?", hint: "Leading indicators, proxy metrics, user engagement signals." }
+      ]
+    },
+    technical: {
+      standard: [
+        { q: "Explain how you would evaluate an ML model for production readiness.", hint: "Accuracy, latency, bias testing, monitoring, A/B testing." },
+        { q: "How do you work with data scientists to translate model outputs into product features?", hint: "Reference LLM integration and stakeholder communication." }
+      ],
+      hard: [
+        { q: "Design the data architecture for a real-time clinical analytics platform.", hint: "Data pipeline, governance, privacy, scaling considerations." },
+        { q: "How would you build an LLM-based system that needs to be auditable for regulatory compliance?", hint: "Logging, explainability, human-in-the-loop, versioning." }
+      ]
+    },
+    leadership: {
+      standard: [
+        { q: "How do you build alignment across teams with competing priorities?", hint: "Shared OKRs, stakeholder mapping, regular communication cadence." },
+        { q: "Describe your leadership style.", hint: "Servant leadership, data-informed, collaborative yet decisive." }
+      ],
+      hard: [
+        { q: "You inherit a demoralized team with unclear direction. What do you do in the first 90 days?", hint: "Listen, diagnose, quick wins, reset vision, build trust." },
+        { q: "How do you handle a direct report who is technically brilliant but difficult to work with?", hint: "Direct feedback, clear expectations, coaching vs. managing out." }
+      ]
+    },
+    culture: {
+      standard: [
+        { q: "Why are you interested in this role and company?", hint: "Connect your personal mission to the company's mission. Be specific." },
+        { q: "What motivates you in your work?", hint: "Impact, building things, solving hard problems at the intersection of science and technology." }
+      ],
+      hard: [
+        { q: "Where do you see yourself in 5 years?", hint: "VP Product or GM in biotech/AI. Show ambition aligned with the company's growth." },
+        { q: "What is your biggest professional failure and what did you learn?", hint: "Show vulnerability, growth mindset, and concrete behavioral change." }
+      ]
+    }
+  };
+
+  const qs = questions[type]?.[difficulty] || questions[type]?.standard || [];
+  container.innerHTML = qs.map((item, i) => `
+    <div class="qa-card">
+      <div class="qa-question">Q${i+1}: ${item.q}</div>
+      <div class="qa-hint">${item.hint}</div>
+      <textarea class="qa-answer" placeholder="Type your answer here..." id="mock-answer-${i}"></textarea>
+      <button class="btn btn-purple" style="margin-top:6px;" onclick="revealFeedback(${i}, '${type}')">Get Coaching Feedback</button>
+      <div class="qa-feedback" id="mock-feedback-${i}"></div>
+    </div>
+  `).join("");
+}
+
+function revealFeedback(idx, type) {
+  const answer = document.getElementById(`mock-answer-${idx}`).value;
+  const fb = document.getElementById(`mock-feedback-${idx}`);
+  if (!answer.trim()) {
+    fb.className = "qa-feedback improve";
+    fb.innerHTML = "<strong>Tip:</strong> Write out your answer first, even if it is rough. Practicing articulation is the key to interview confidence.";
+    return;
+  }
+  const wordCount = answer.trim().split(/\s+/).length;
+  const hasMetrics = /\d+/.test(answer);
+  const hasAction = /(i led|i built|i drove|i managed|i created|i implemented|i designed|i launched)/i.test(answer);
+
+  if (wordCount > 50 && hasMetrics && hasAction) {
+    fb.className = "qa-feedback good";
+    fb.innerHTML = `<strong>Strong answer!</strong> You included specific metrics and action verbs. Length is good (${wordCount} words). Consider: Does your answer end with a clear result or impact? Try weaving in one of your brand proof points: "${BRAND.proofPoints[Math.floor(Math.random()*BRAND.proofPoints.length)]}"`;
+  } else {
+    let tips = [];
+    if (wordCount < 50) tips.push("Expand your answer to 60-90 seconds of speaking time (roughly 80-120 words).");
+    if (!hasMetrics) tips.push("Add specific numbers or metrics to make your impact tangible.");
+    if (!hasAction) tips.push("Use strong action verbs: 'I led', 'I built', 'I drove', 'I launched'.");
+    fb.className = "qa-feedback improve";
+    fb.innerHTML = `<strong>Good start. Here is how to strengthen it:</strong><br>${tips.map(t => "&#8226; " + t).join("<br>")}`;
+  }
+}
+
+// ===================== OFFER COMPARISON =====================
+function compareOffers() {
+  const get = id => parseFloat(document.getElementById(id).value) || 0;
+  const c1 = document.getElementById("offer1-company").value || "Offer 1";
+  const c2 = document.getElementById("offer2-company").value || "Offer 2";
+  const tc1 = get("offer1-base") + (get("offer1-base") * get("offer1-bonus") / 100) + get("offer1-equity");
+  const tc2 = get("offer2-base") + (get("offer2-base") * get("offer2-bonus") / 100) + get("offer2-equity");
+  const commuteCost1 = get("offer1-commute") * 2 * 250 / 60; // hours per year commuting
+  const commuteCost2 = get("offer2-commute") * 2 * 250 / 60;
+
+  const div = document.getElementById("offer-comparison");
+  div.innerHTML = `
+    <table class="salary-table">
+      <tr><th></th><th>${c1}</th><th>${c2}</th></tr>
+      <tr><td>Base Salary</td><td>$${get("offer1-base").toLocaleString()}</td><td>$${get("offer2-base").toLocaleString()}</td></tr>
+      <tr><td>Bonus (annual est.)</td><td>$${Math.round(get("offer1-base") * get("offer1-bonus") / 100).toLocaleString()}</td><td>$${Math.round(get("offer2-base") * get("offer2-bonus") / 100).toLocaleString()}</td></tr>
+      <tr><td>Equity/RSU (annual)</td><td>$${get("offer1-equity").toLocaleString()}</td><td>$${get("offer2-equity").toLocaleString()}</td></tr>
+      <tr style="font-weight:700;background:var(--blue-light);"><td>Total Compensation</td><td>$${Math.round(tc1).toLocaleString()}</td><td>$${Math.round(tc2).toLocaleString()}</td></tr>
+      <tr><td>Annual Commute Hours</td><td>${Math.round(commuteCost1)}h</td><td>${Math.round(commuteCost2)}h</td></tr>
+      <tr><td>Effective Hourly Rate*</td><td>$${Math.round(tc1 / (2080 + commuteCost1))}/hr</td><td>$${Math.round(tc2 / (2080 + commuteCost2))}/hr</td></tr>
+    </table>
+    <p style="font-size:10px;color:var(--gray);margin-top:6px;">*Based on 2080 work hours + commute hours per year.</p>
+    ${tc1 !== tc2 ? `<div class="coach-section" style="margin-top:10px;background:${tc1 > tc2 ? 'var(--green-light)' : 'var(--blue-light)'};border-color:${tc1 > tc2 ? 'var(--green)' : 'var(--blue)'};">
+      <div class="coach-text"><strong>${tc1 > tc2 ? c1 : c2}</strong> has ${Math.round(Math.abs(tc1-tc2)/Math.min(tc1,tc2)*100)}% higher total compensation ($${Math.round(Math.abs(tc1-tc2)).toLocaleString()}/year more).</div>
+    </div>` : ""}
+  `;
+}
+
+// ===================== FEATURE 1: COMPANY WATCHLIST =====================
+function isWatchedCompany(companyName) {
+  if (!companyName || !data.watchlist) return false;
+  const cn = companyName.toLowerCase();
+  return data.watchlist.some(w => cn.includes(w.companyName.toLowerCase()) || w.companyName.toLowerCase().includes(cn));
+}
+
+function addToWatchlist() {
+  const entry = {
+    id: 'watch-' + Date.now(),
+    companyName: document.getElementById('watch-company-name').value,
+    careerPageUrl: document.getElementById('watch-career-url').value,
+    dateAdded: new Date().toISOString().slice(0,10),
+    lastChecked: null,
+    frequency: document.getElementById('watch-frequency').value,
+    tags: document.getElementById('watch-tags').value.split(',').map(t => t.trim()).filter(Boolean),
+    jobCount: 0,
+    status: 'active',
+    notes: document.getElementById('watch-notes').value
+  };
+  if (!entry.companyName) { alert('Company name is required.'); return; }
+  data.watchlist = data.watchlist || [];
+  data.watchlist.push(entry);
+  addLog(`Added ${entry.companyName} to watchlist`);
+  closeModal('modal-add-watchlist');
+  saveData(); renderWatchlist(); updateStats();
+  ['watch-company-name','watch-career-url','watch-tags','watch-notes'].forEach(id => document.getElementById(id).value = '');
+}
+
+function quickAddWatch() {
+  const name = document.getElementById('quick-watch-name').value;
+  const url = document.getElementById('quick-watch-url').value;
+  if (!name) { alert('Company name is required.'); return; }
+  data.watchlist = data.watchlist || [];
+  data.watchlist.push({
+    id: 'watch-' + Date.now(), companyName: name, careerPageUrl: url,
+    dateAdded: new Date().toISOString().slice(0,10), lastChecked: null,
+    frequency: 'weekly', tags: [], jobCount: 0, status: 'active', notes: ''
+  });
+  addLog(`Quick-added ${name} to watchlist`);
+  saveData(); renderWatchlist(); updateStats();
+  document.getElementById('quick-watch-name').value = '';
+  document.getElementById('quick-watch-url').value = '';
+}
+
+function watchFromJob(idx) {
+  const job = data.jobs[idx];
+  if (!job) return;
+  data.watchlist = data.watchlist || [];
+  if (isWatchedCompany(job.company)) { alert(`${job.company} is already on your watchlist.`); return; }
+  data.watchlist.push({
+    id: 'watch-' + Date.now(), companyName: job.company,
+    careerPageUrl: job.url ? new URL(job.url).origin : '',
+    dateAdded: new Date().toISOString().slice(0,10), lastChecked: null,
+    frequency: 'weekly', tags: [job.sector || 'general'], jobCount: 1, status: 'active', notes: `Added from job: ${job.title}`
+  });
+  addLog(`Watching ${job.company} (from job card)`);
+  saveData(); renderWatchlist(); renderJobs(); updateStats();
+}
+
+function removeFromWatchlist(idx) {
+  const name = data.watchlist[idx]?.companyName;
+  data.watchlist.splice(idx, 1);
+  addLog(`Removed ${name} from watchlist`);
+  saveData(); renderWatchlist(); renderJobs(); updateStats();
+}
+
+function toggleWatchStatus(idx) {
+  const w = data.watchlist[idx];
+  w.status = w.status === 'active' ? 'paused' : 'active';
+  saveData(); renderWatchlist();
+}
+
+function renderWatchlist() {
+  const list = document.getElementById('watchlist-list');
+  data.watchlist = data.watchlist || [];
+  const badge = document.getElementById('badge-watchlist');
+  if (data.watchlist.length === 0) {
+    list.innerHTML = '<div class="empty-state"><div class="icon">&#127919;</div><h3>No companies watched yet</h3><p>Add companies to monitor their career pages for new jobs.</p></div>';
+    badge.style.display = 'none';
+    return;
+  }
+  badge.style.display = '';
+  badge.textContent = data.watchlist.filter(w => w.status === 'active').length;
+  list.innerHTML = `<table class="watchlist-table">
+    <thead><tr><th>Company</th><th>Career Page</th><th>Frequency</th><th>Tags</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody>${data.watchlist.map((w, i) => `<tr style="${w.status === 'paused' ? 'opacity:0.5;' : ''}">
+      <td style="font-weight:600;">${escapeHtml(w.companyName)}</td>
+      <td>${w.careerPageUrl ? `<a href="${w.careerPageUrl}" target="_blank" style="color:var(--blue);font-size:11px;">Visit</a>` : '---'}</td>
+      <td>${escapeHtml(w.frequency)}</td>
+      <td>${(w.tags || []).map(t => `<span class="pill pill-blue">${escapeHtml(t)}</span>`).join(' ')}</td>
+      <td><span class="status-badge ${w.status === 'active' ? 'status-interview' : 'status-queued'}">${w.status}</span></td>
+      <td style="display:flex;gap:4px;">
+        <button class="btn btn-outline" style="font-size:10px;" onclick="toggleWatchStatus(${i})">${w.status === 'active' ? 'Pause' : 'Resume'}</button>
+        <button class="btn btn-outline" style="font-size:10px;color:#0369A1;border-color:#0369A1;" onclick="researchCompany('${w.companyName.replace(/'/g,"\\'")}')">Research</button>
+        <button class="btn btn-danger" style="font-size:10px;" onclick="removeFromWatchlist(${i})">Remove</button>
+      </td>
+    </tr>`).join('')}</tbody>
+  </table>`;
+}
+
+// ===================== FEATURE 2: GAP ANALYSIS =====================
+function analyzeGap(idx) {
+  const job = data.jobs[idx];
+  if (!job) return;
+  const desc = (job.description || '').toLowerCase();
+  const title = (job.title || '').toLowerCase();
+  const text = `${title} ${desc}`;
+
+  // Extract keywords from job description
+  const allSkills = [...SKILL_INVENTORY.hardSkills, ...SKILL_INVENTORY.softSkills, ...SKILL_INVENTORY.tools.map(t => t.toLowerCase())];
+  const matched = [], missing = [], emphasize = [];
+
+  // Check each skill
+  allSkills.forEach(skill => {
+    if (text.includes(skill.toLowerCase())) {
+      if (SKILL_INVENTORY.hardSkills.includes(skill) || SKILL_INVENTORY.tools.map(t=>t.toLowerCase()).includes(skill)) {
+        matched.push(skill);
+      } else {
+        emphasize.push(skill);
+      }
+    }
+  });
+
+  // Find requirements in JD that we might not have
+  const jdKeywords = text.match(/\b(?:experience with|proficiency in|knowledge of|expertise in|familiar with|skilled in)\s+([^,.;]+)/gi) || [];
+  const commonGapTerms = ['kubernetes','terraform','react','node','java','scala','go','rust','c\\+\\+','salesforce','sap','oracle','azure','gcp','spark','kafka','hadoop','dbt','looker','amplitude','mixpanel','segment','hubspot','marketo','workday'];
+  commonGapTerms.forEach(term => {
+    const re = new RegExp('\\b' + term + '\\b', 'i');
+    if (re.test(text) && !allSkills.some(s => s.toLowerCase().includes(term.toLowerCase()))) {
+      missing.push(term);
+    }
+  });
+
+  const matchPct = allSkills.length > 0 ? Math.round((matched.length / Math.max(matched.length + missing.length, 1)) * 100) : 50;
+
+  document.getElementById('gap-modal-title').textContent = `Gap Analysis: ${job.title} at ${job.company}`;
+  document.getElementById('gap-modal-content').innerHTML = `
+    <div style="margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;">
+        <span>ATS Keyword Match</span><span style="font-weight:700;">${matchPct}%</span>
+      </div>
+      <div class="gap-bar"><div class="gap-bar-fill" style="width:${matchPct}%;background:${matchPct >= 70 ? 'var(--green)' : matchPct >= 40 ? 'var(--yellow)' : 'var(--red)'};"></div></div>
+    </div>
+    <div style="margin-bottom:12px;">
+      <div style="font-size:12px;font-weight:600;color:var(--green);margin-bottom:4px;">Skills You Have (${matched.length})</div>
+      <div class="skill-pills">${matched.map(s => `<span class="pill pill-green">${s}</span>`).join('')}${matched.length === 0 ? '<span style="font-size:11px;color:var(--gray);">Add more detail to the job description for better analysis</span>' : ''}</div>
+    </div>
+    <div style="margin-bottom:12px;">
+      <div style="font-size:12px;font-weight:600;color:#856404;margin-bottom:4px;">Skills to Emphasize (${emphasize.length})</div>
+      <div class="skill-pills">${emphasize.map(s => `<span class="pill pill-yellow">${s}</span>`).join('')}${emphasize.length === 0 ? '<span style="font-size:11px;color:var(--gray);">None detected</span>' : ''}</div>
+    </div>
+    <div style="margin-bottom:12px;">
+      <div style="font-size:12px;font-weight:600;color:var(--red);margin-bottom:4px;">Gaps to Address (${missing.length})</div>
+      <div class="skill-pills">${missing.map(s => `<span class="pill pill-red">${s}</span>`).join('')}${missing.length === 0 ? '<span style="font-size:11px;color:var(--gray);">No significant gaps detected</span>' : ''}</div>
+    </div>
+    <div class="coach-section" style="margin-top:12px;">
+      <div class="coach-title">Resume Optimization Tips</div>
+      <div class="coach-text">
+        ${matched.length > 0 ? `<div>&#10003; Make sure these keywords appear prominently: <strong>${matched.slice(0,5).join(', ')}</strong></div>` : ''}
+        ${missing.length > 0 ? `<div>&#9888; Consider addressing these gaps in your cover letter: <strong>${missing.join(', ')}</strong></div>` : ''}
+        ${emphasize.length > 0 ? `<div>&#128161; Emphasize soft skills in your stories: <strong>${emphasize.join(', ')}</strong></div>` : ''}
+        <div>&#127919; Overall fit: <strong>${matchPct >= 70 ? 'Strong match — apply with confidence!' : matchPct >= 40 ? 'Moderate match — tailor your resume carefully' : 'Stretch role — lead with transferable skills'}</strong></div>
+      </div>
+    </div>
+    <div id="gap-keywords-data" style="display:none;">${[...matched, ...emphasize].join(', ')}</div>
+  `;
+  showModal('modal-gap-analysis');
+  addLog(`Analyzed fit for ${job.title} at ${job.company}: ${matchPct}% match`);
+}
+
+function copyGapKeywords() {
+  const kw = document.getElementById('gap-keywords-data')?.textContent || '';
+  navigator.clipboard.writeText(kw).then(() => alert('Keywords copied!')).catch(() => alert('Copy failed.'));
+}
+
+// ===================== FEATURE 4: PITCH GENERATOR =====================
+let currentPitchJobIdx = null;
+
+function generatePitch(idx) {
+  const job = data.jobs[idx];
+  if (!job) return;
+  currentPitchJobIdx = idx;
+  const sector = job.sector || 'tech';
+  const vp = BRAND.valueProps[sector] || BRAND.valueProps.tech;
+
+  // Generate "Why You're Perfect" reasons
+  const reasons = [];
+  const title = (job.title || '').toLowerCase();
+  const desc = (job.description || '').toLowerCase();
+
+  if (title.includes('product') || title.includes('pm')) reasons.push(`7 years of product management across biotech, SaaS, and defense — you've done this exact role type before.`);
+  if (desc.includes('ai') || desc.includes('machine learning') || desc.includes('ml') || desc.includes('llm')) reasons.push(`You've built production AI/ML systems including LLM-powered platforms serving 340+ stakeholders — not just managed them.`);
+  if (desc.includes('data') || desc.includes('analytics') || desc.includes('governance')) reasons.push(`Scaled an AI analytics platform from 20 to 325 active users with deep data governance expertise.`);
+  if (desc.includes('stakeholder') || desc.includes('cross-functional') || desc.includes('leadership')) reasons.push(`Led cross-functional teams of 8-15 across engineering, data science, and operations — you excel at alignment.`);
+  if (desc.includes('biotech') || desc.includes('pharma') || desc.includes('clinical')) reasons.push(`Your background bridges both business and technical domains.`);
+  if (desc.includes('strategy') || desc.includes('roadmap') || desc.includes('planning')) reasons.push(`Strategic thinker with hands-on execution — you build roadmaps AND ship products.`);
+
+  // Add unique combo reasons
+  SKILL_INVENTORY.uniqueCombinations.forEach(combo => {
+    if (reasons.length < 5) reasons.push(`Rare combination: ${combo}`);
+  });
+
+  const topReasons = reasons.slice(0, 5);
+
+  // Generate elevator pitch
+  const elevator = `I'm a product leader who combines ${sector === 'biotech' ? 'deep biotechnology expertise' : sector === 'defense' ? 'defense program management experience' : 'technical AI/ML depth'} with strategic business acumen. ${BRAND.usp} At my core, I build things that scale — like the AI analytics platform I grew from 20 to 325 users — and I do it by bringing together engineering, data science, and business stakeholders around a shared vision.`;
+
+  // LinkedIn outreach version
+  const outreach = `Hi [Name], I came across the ${job.title} role at ${job.company} and was immediately drawn to it. ${BRAND.tagline.toLowerCase()} — and I believe my experience ${sector === 'biotech' ? 'in biotech product management' : 'building AI-powered products'} could be a strong fit. Would love to connect and learn more about the team. Best, ${data.settings?.name?.split(' ')[0] || 'Your Name'}`;
+
+  data.pitches = data.pitches || [];
+  const pitch = { id: 'pitch-' + Date.now(), jobId: job.id, reasons: topReasons, elevatorPitch: elevator, outreachVersion: outreach, usedInCL: false, ledToInterview: false };
+  data.pitches.push(pitch);
+  saveData();
+
+  document.getElementById('pitch-modal-title').textContent = `Why You're Perfect: ${job.title} at ${job.company}`;
+  document.getElementById('pitch-modal-content').innerHTML = `
+    <div class="pitch-card">
+      <div style="font-size:13px;font-weight:600;color:var(--green);margin-bottom:8px;">Top Reasons You're the Right Fit</div>
+      ${topReasons.map((r, i) => `<div class="pitch-reason"><span style="color:var(--green);font-weight:700;">${i+1}.</span> ${r}</div>`).join('')}
+    </div>
+    <div class="pitch-elevator">
+      <div style="font-size:12px;font-weight:600;color:var(--blue);margin-bottom:6px;">Your Elevator Pitch</div>
+      ${elevator}
+    </div>
+    <div style="margin-top:10px;padding:10px;background:var(--gray-light);border-radius:8px;">
+      <div style="font-size:12px;font-weight:600;margin-bottom:6px;">LinkedIn Outreach Version</div>
+      <div style="font-size:12px;line-height:1.5;" id="pitch-outreach-text">${outreach}</div>
+    </div>
+  `;
+  showModal('modal-pitch');
+  addLog(`Generated pitch for ${job.title} at ${job.company}`);
+}
+
+function copyPitchLinkedIn() {
+  const text = document.getElementById('pitch-outreach-text')?.textContent || '';
+  navigator.clipboard.writeText(text).then(() => alert('LinkedIn outreach copied!')).catch(() => alert('Copy failed.'));
+}
+
+function usePitchInCL() {
+  if (currentPitchJobIdx !== null) {
+    closeModal('modal-pitch');
+    generateCLForJob(currentPitchJobIdx);
+  }
+}
+
+// ===================== FEATURE 5: FOLLOW-UP EMAIL DRAFTER =====================
+function draftFollowUpEmail(idx, type) {
+  const fup = data.followups[idx];
+  if (!fup) return;
+
+  const templates = {
+    'checkin': {
+      subject: `Following Up: ${fup.role} Application`,
+      body: `Dear [Hiring Manager],
+
+I hope this message finds you well. I wanted to follow up on my application for the ${fup.role} position at ${fup.company}, submitted on [date].
+
+I remain very enthusiastic about this opportunity. ${BRAND.usp} I believe my combination of ${fup.role.toLowerCase().includes('product') ? 'product management expertise and AI/ML technical depth' : 'strategic thinking and hands-on execution'} would allow me to make a meaningful contribution to your team.
+
+I would welcome the chance to discuss how my experience — including scaling an AI analytics platform from 20 to 325 users and leading cross-functional teams of 8-15 — aligns with what you are looking for.
+
+Thank you for your time and consideration. I look forward to hearing from you.
+
+Best regards,
+${data.settings?.name || 'Your Name'}
+MBA | MS Biotechnology
+${data.settings?.email || 'your@email.com'}`
+    },
+    'thankyou': {
+      subject: `Thank You — ${fup.role} Interview at ${fup.company}`,
+      body: `Dear [Interviewer Name],
+
+Thank you so much for taking the time to meet with me today regarding the ${fup.role} position. I truly enjoyed learning more about ${fup.company}'s work and the team's vision.
+
+Our conversation reinforced my enthusiasm for this role. I was particularly excited to discuss [specific topic from interview]. I believe my experience in [relevant area] positions me well to contribute to [specific goal discussed].
+
+${BRAND.usp} I am confident that my background at the intersection of ${fup.role.toLowerCase().includes('product') ? 'product strategy and AI/ML' : 'strategy and execution'} would enable me to add value from day one.
+
+Please do not hesitate to reach out if you need any additional information. I look forward to the next steps.
+
+Warm regards,
+${data.settings?.name || 'Your Name'}`
+    },
+    'rejection': {
+      subject: `Thank You — ${fup.role} at ${fup.company}`,
+      body: `Dear [Name],
+
+Thank you for letting me know about your decision regarding the ${fup.role} position. While I am disappointed, I appreciate you taking the time to consider my application and keeping me informed.
+
+I have a great deal of respect for ${fup.company} and the work your team is doing. If any future opportunities arise that might be a fit for my background in product management and AI/ML, I would welcome the chance to be considered.
+
+I wish you and the team all the best.
+
+Sincerely,
+${data.settings?.name || 'Your Name'}`
+    },
+    'networking': {
+      subject: `Introduction Request — ${fup.company}`,
+      body: `Hi [Name],
+
+I hope you are doing well. I am currently exploring opportunities in product management, particularly roles that combine AI/ML with [biotech/enterprise SaaS/defense tech].
+
+I noticed that ${fup.company} has some exciting work in this space, and I was hoping you might be able to connect me with someone on the team, or share any insights about the culture and direction.
+
+A bit about me: ${BRAND.usp} I have ${BRAND.proofPoints[0].toLowerCase()} and ${BRAND.proofPoints[1].toLowerCase()}.
+
+I would be grateful for even a brief conversation. Happy to work around your schedule.
+
+Best,
+${data.settings?.name?.split(' ')[0] || 'Your Name'}`
+    }
+  };
+
+  const template = templates[type] || templates.checkin;
+
+  document.getElementById('email-modal-title').textContent = `Email Draft: ${type === 'checkin' ? '7-Day Check-in' : type === 'thankyou' ? 'Thank You Note' : type === 'rejection' ? 'Graceful Response' : 'Networking Intro'}`;
+  document.getElementById('email-modal-content').innerHTML = `
+    <div class="tone-selector">
+      <span style="font-size:11px;color:var(--gray);margin-right:4px;">Template:</span>
+      <button class="tone-btn ${type==='checkin'?'active':''}" onclick="draftFollowUpEmail(${idx},'checkin')">Check-in</button>
+      <button class="tone-btn ${type==='thankyou'?'active':''}" onclick="draftFollowUpEmail(${idx},'thankyou')">Thank You</button>
+      <button class="tone-btn ${type==='rejection'?'active':''}" onclick="draftFollowUpEmail(${idx},'rejection')">Post-Rejection</button>
+      <button class="tone-btn ${type==='networking'?'active':''}" onclick="draftFollowUpEmail(${idx},'networking')">Networking</button>
+    </div>
+    <div class="email-draft">
+      <div class="email-subject">Subject: ${template.subject}</div>
+      <div class="email-body" id="email-draft-text">${template.body}</div>
+    </div>
+  `;
+  showModal('modal-email-draft');
+}
+
+function copyEmailDraft() {
+  const text = document.getElementById('email-draft-text')?.textContent || '';
+  navigator.clipboard.writeText(text).then(() => alert('Email copied to clipboard!')).catch(() => alert('Copy failed.'));
+}
+
+// ===================== FEATURE 3: MOMENTUM DASHBOARD =====================
+function renderMomentum() {
+  const statsBar = document.querySelector('.stats-bar');
+  if (!statsBar) return;
+
+  data.momentum = data.momentum || { weeklyTarget: 6, streakDays: 0, lastActiveDate: null };
+  const apps = data.applications || [];
+  const today = new Date().toISOString().slice(0,10);
+  const weekAgo = new Date(Date.now() - 7*86400000).toISOString().slice(0,10);
+
+  // Weekly apps count
+  const weeklyApps = apps.filter(a => a.date >= weekAgo && a.status !== 'queued').length;
+  const target = data.momentum.weeklyTarget || 6;
+  const pct = Math.min(100, Math.round((weeklyApps / target) * 100));
+
+  // Funnel stats
+  const applied = apps.filter(a => a.status === 'applied').length;
+  const screening = apps.filter(a => a.status === 'screening').length;
+  const interviews = apps.filter(a => a.status === 'interview').length;
+  const offers = apps.filter(a => a.status === 'offer').length;
+  const totalApps = apps.length;
+
+  // Streak calculation
+  if (apps.some(a => a.date === today)) {
+    if (data.momentum.lastActiveDate === new Date(Date.now() - 86400000).toISOString().slice(0,10) || data.momentum.lastActiveDate === today) {
+      if (data.momentum.lastActiveDate !== today) data.momentum.streakDays = (data.momentum.streakDays || 0) + 1;
+    } else if (data.momentum.lastActiveDate !== today) {
+      data.momentum.streakDays = 1;
+    }
+    data.momentum.lastActiveDate = today;
+    saveData();
+  }
+  const streak = data.momentum.streakDays || 0;
+
+  // Health check
+  let health, healthColor, healthBg;
+  if (weeklyApps >= target) { health = 'Crushing It'; healthColor = 'var(--green)'; healthBg = 'var(--green-light)'; }
+  else if (weeklyApps >= target * 0.5) { health = 'On Track'; healthColor = 'var(--blue)'; healthBg = 'var(--blue-light)'; }
+  else { health = 'Falling Behind'; healthColor = 'var(--red)'; healthBg = 'var(--red-light)'; }
+
+  // Ready to apply queue
+  const queued = apps.filter(a => a.status === 'queued').length;
+
+  statsBar.innerHTML = `
+    <div class="stat-card" style="grid-column:span 2;">
+      <div style="font-size:11px;color:var(--gray);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Weekly Progress</div>
+      <div class="momentum-bar">
+        <span style="font-size:20px;font-weight:700;color:var(--blue);">${weeklyApps}</span>
+        <span style="font-size:11px;color:var(--gray);">of ${target}</span>
+        <div class="momentum-progress"><div class="momentum-fill" style="width:${pct}%;"></div></div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number" style="color:var(--green);">${applied}</div>
+      <div class="stat-label">Applied</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number" style="color:var(--purple);">${interviews}</div>
+      <div class="stat-label">Interviews</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number" style="color:#856404;">${queued}</div>
+      <div class="stat-label">In Queue</div>
+    </div>
+    <div class="stat-card">
+      <div style="margin-bottom:2px;">
+        <span class="streak-badge" style="background:${streak > 0 ? 'var(--yellow-light)' : 'var(--gray-light)'};color:${streak > 0 ? '#856404' : 'var(--gray)'};">
+          ${streak > 0 ? '&#128293;' : ''} ${streak}-day streak
+        </span>
+      </div>
+      <div class="stat-label">Activity</div>
+    </div>
+    <div class="stat-card">
+      <span class="health-badge" style="background:${healthBg};color:${healthColor};">${health}</span>
+      <div class="stat-label" style="margin-top:4px;">Status</div>
+    </div>
+  `;
+}
+
+// ===================== FEATURE 6: COMPANY RESEARCH CARDS =====================
+function researchCompany(companyName) {
+  if (!companyName) return;
+  data.companyResearch = data.companyResearch || [];
+
+  // Check cache
+  const cached = data.companyResearch.find(r => r.companyName.toLowerCase() === companyName.toLowerCase());
+
+  // Company knowledge base (static for offline; real version would use web search)
+  const companyDB = {
+    'snap inc.': { size: '~5,000 employees', industry: 'Social Media / Technology', glassdoorRating: '3.8/5', salaryRange: '$150K-$250K + RSUs (L4-L5)', interviewProcess: '4-5 rounds: Recruiter, Phone screen, Virtual onsite (3-4 interviews), Team match', recentNews: ['AR platform growth','AI-powered features expansion','New advertising products'], hq: 'Santa Monica, CA' },
+    'genentech': { size: '~14,000 employees', industry: 'Biotechnology (Roche subsidiary)', glassdoorRating: '4.2/5', salaryRange: '$140K-$240K (PM roles)', interviewProcess: '3-4 rounds: HR screen, Hiring Manager, Cross-functional panel, Director final', recentNews: ['Personalized medicine initiatives','Digital health partnerships','South San Francisco campus'], hq: 'South San Francisco, CA' },
+    'northrop grumman': { size: '~95,000 employees', industry: 'Defense / Aerospace', glassdoorRating: '3.9/5', salaryRange: '$130K-$200K (PM roles)', interviewProcess: '2-3 rounds: Recruiter, Technical panel, Hiring Manager. Clearance required for many roles.', recentNews: ['Next-gen defense systems','Space systems contracts','AI for defense applications'], hq: 'Falls Church, VA' }
+  };
+
+  const key = companyName.toLowerCase();
+  const info = companyDB[key] || {
+    size: 'Research needed', industry: 'Research needed', glassdoorRating: 'N/A',
+    salaryRange: 'Research needed', interviewProcess: 'Research needed',
+    recentNews: ['Run a web search for latest news'], hq: 'Research needed'
+  };
+
+  // Cache it
+  if (!cached) {
+    data.companyResearch.push({ companyName, ...info, lastUpdated: new Date().toISOString().slice(0,10) });
+    saveData();
+  }
+
+  document.getElementById('research-modal-title').textContent = `Company Research: ${companyName}`;
+  document.getElementById('research-modal-content').innerHTML = `
+    <div class="research-card">
+      <div style="font-size:16px;font-weight:700;margin-bottom:4px;">${companyName}</div>
+      <div style="font-size:12px;color:var(--gray);">Last updated: ${cached?.lastUpdated || new Date().toISOString().slice(0,10)}</div>
+      <div class="research-grid">
+        <div class="research-item"><div class="research-label">Company Size</div><div class="research-value">${info.size}</div></div>
+        <div class="research-item"><div class="research-label">Industry</div><div class="research-value">${info.industry}</div></div>
+        <div class="research-item"><div class="research-label">Glassdoor Rating</div><div class="research-value">${info.glassdoorRating}</div></div>
+        <div class="research-item"><div class="research-label">PM Salary Range</div><div class="research-value">${info.salaryRange}</div></div>
+        <div class="research-item" style="grid-column:span 2;"><div class="research-label">HQ</div><div class="research-value">${info.hq || 'N/A'}</div></div>
+      </div>
+      <div style="margin-top:12px;">
+        <div style="font-size:12px;font-weight:600;margin-bottom:6px;">Interview Process</div>
+        <div style="font-size:12px;line-height:1.5;padding:8px;background:var(--blue-light);border-radius:6px;">${info.interviewProcess}</div>
+      </div>
+      <div style="margin-top:12px;">
+        <div style="font-size:12px;font-weight:600;margin-bottom:6px;">Recent News & Updates</div>
+        ${(info.recentNews || []).map(n => `<div style="font-size:12px;padding:4px 0;">&#128196; ${n}</div>`).join('')}
+      </div>
+    </div>
+  `;
+  showModal('modal-research');
+  addLog(`Researched ${companyName}`);
+}
+
+let currentResearchCompany = '';
+function prepInterviewFromResearch() {
+  const title = document.getElementById('research-modal-title').textContent.replace('Company Research: ', '');
+  closeModal('modal-research');
+  document.getElementById('coach-company').value = title;
+  showPanel('coaching');
+}
+
+// ===================== V4: AUTOMATION CONTROL FUNCTIONS =====================
+function saveAutomationConfig() {
+  data.automationConfig = {
+    mode: document.getElementById('ctrl-mode').value,
+    strategy: document.getElementById('ctrl-strategy').value,
+    dailyTarget: parseInt(document.getElementById('ctrl-target').value) || 25,
+  };
+  saveData();
+  logAction('config', `Mode: ${data.automationConfig.mode}, Strategy: ${data.automationConfig.strategy}, Target: ${data.automationConfig.dailyTarget}/day`);
+}
+
+function loadAutomationConfig() {
+  const cfg = data.automationConfig || {};
+  const modeEl = document.getElementById('ctrl-mode');
+  const stratEl = document.getElementById('ctrl-strategy');
+  const targetEl = document.getElementById('ctrl-target');
+  if (modeEl && cfg.mode) modeEl.value = cfg.mode;
+  if (stratEl && cfg.strategy) stratEl.value = cfg.strategy;
+  if (targetEl && cfg.dailyTarget) targetEl.value = cfg.dailyTarget;
+  updateControlStats();
+}
+
+function updateControlStats() {
+  const today = new Date().toISOString().slice(0, 10);
+  const todayApps = (data.applicationQueue || []).filter(a => a.submitted_at && a.submitted_at.startsWith(today));
+  const interviews = (data.applications || []).filter(a => a.status === 'interview');
+  const el = document.getElementById('ctrl-today-stat');
+  if (el) el.textContent = `${todayApps.length} applied | ${interviews.length} interviews`;
+}
+
+function startDiscovery() {
+  logAction('discovery', 'Discovery started — run: python main.py discover');
+  alert('To run discovery, execute in your terminal:\\n\\npython main.py discover\\n\\nOr for full cycle:\\npython main.py full-cycle --dry-run');
+}
+function pauseEngine() { logAction('engine', 'Engine paused'); }
+function stopEngine() { logAction('engine', 'Engine stopped'); }
+
+// ===================== V4: APPLICATION QUEUE FUNCTIONS =====================
+function renderQueue() {
+  const filter = document.getElementById('queue-filter').value;
+  let queue = data.applicationQueue || [];
+  if (filter !== 'all') queue = queue.filter(a => a.status === filter);
+  queue.sort((a, b) => (b.score || 0) - (a.score || 0));
+
+  const body = document.getElementById('queue-body');
+  const empty = document.getElementById('queue-empty');
+  const statsEl = document.getElementById('queue-stats');
+
+  // Stats
+  const allQ = data.applicationQueue || [];
+  const stats = {
+    queued: allQ.filter(a => a.status === 'queued').length,
+    filling: allQ.filter(a => a.status === 'filling').length,
+    ready: allQ.filter(a => a.status === 'ready-for-review').length,
+    submitted: allQ.filter(a => a.status === 'submitted').length,
+    errors: allQ.filter(a => a.status === 'error').length,
+  };
+  if (statsEl) statsEl.innerHTML = `
+    <span style="color:var(--gray);">Queued: <strong>${stats.queued}</strong></span>
+    <span style="color:var(--blue);">Filling: <strong>${stats.filling}</strong></span>
+    <span style="color:#856404;">Review: <strong>${stats.ready}</strong></span>
+    <span style="color:var(--green);">Submitted: <strong>${stats.submitted}</strong></span>
+    <span style="color:var(--red);">Errors: <strong>${stats.errors}</strong></span>
+    <span>Total: <strong>${allQ.length}</strong></span>`;
+
+  const badge = document.getElementById('badge-queue');
+  if (badge) { badge.textContent = stats.queued + stats.ready; badge.style.display = (stats.queued + stats.ready) > 0 ? 'inline' : 'none'; }
+
+  if (!queue.length) { body.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+
+  body.innerHTML = queue.map((a, i) => {
+    const scoreClass = a.score >= 85 ? 'match-high' : a.score >= 60 ? 'match-medium' : 'match-low';
+    const statusClass = {'queued':'q-queued','filling':'q-filling','ready-for-review':'q-ready','submitted':'q-submitted','error':'q-error'}[a.status] || 'q-queued';
+    return `<tr>
+      <td><input type="checkbox" class="queue-check" data-idx="${i}"></td>
+      <td><span class="match-score ${scoreClass}">${a.score || 0}%</span></td>
+      <td><strong>${escapeHtml(a.job_title || '')}</strong></td>
+      <td>${escapeHtml(a.company || '')}</td>
+      <td><span style="font-size:10px;text-transform:uppercase;">${a.ats_type || '—'}</span></td>
+      <td>${a.easy_apply ? '&#9889; Yes' : 'No'}</td>
+      <td><span class="q-status ${statusClass}">${a.status}</span></td>
+      <td>
+        ${a.status === 'queued' ? `<button class="btn btn-outline" style="font-size:10px;" onclick="approveQueueItem(${i})">Approve</button>` : ''}
+        ${a.url ? `<a href="${a.url}" target="_blank" class="btn btn-outline" style="font-size:10px;">View</a>` : ''}
+        <button class="btn btn-danger" style="font-size:10px;" onclick="removeQueueItem(${i})">Remove</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function approveQueueItem(idx) {
+  if (data.applicationQueue[idx]) {
+    data.applicationQueue[idx].status = 'ready-for-review';
+    data.applicationQueue[idx].materials_ready = true;
+    saveData(); renderQueue();
+    logAction('queue', `Approved: ${data.applicationQueue[idx].job_title} at ${data.applicationQueue[idx].company}`);
+  }
+}
+
+function removeQueueItem(idx) {
+  if (data.applicationQueue[idx]) {
+    const removed = data.applicationQueue.splice(idx, 1)[0];
+    saveData(); renderQueue();
+    logAction('queue', `Removed: ${removed.job_title} at ${removed.company}`);
+  }
+}
+
+function approveSelected() {
+  document.querySelectorAll('.queue-check:checked').forEach(cb => {
+    const idx = parseInt(cb.dataset.idx);
+    if (data.applicationQueue[idx] && data.applicationQueue[idx].status === 'queued') {
+      data.applicationQueue[idx].status = 'ready-for-review';
+    }
+  });
+  saveData(); renderQueue();
+  logAction('queue', 'Batch approved selected items');
+}
+
+function autoFillAll() {
+  logAction('apply', 'Auto-fill initiated — run: python main.py apply --dry-run');
+  alert('To auto-fill queued applications, run:\\n\\npython main.py apply --dry-run\\n\\nThis will fill forms without submitting.');
+}
+
+function toggleQueueSelectAll() {
+  const checked = document.getElementById('queue-select-all').checked;
+  document.querySelectorAll('.queue-check').forEach(cb => cb.checked = checked);
+}
+
+function addToQueue(jobIdx) {
+  const j = data.jobs[jobIdx];
+  if (!j) return;
+  const exists = data.applicationQueue.find(a => a.job_title === j.title && a.company === j.company);
+  if (exists) { alert('Already in queue'); return; }
+  data.applicationQueue.push({
+    id: 'app_' + Date.now(),
+    job_id: j.id || '',
+    job_title: j.title,
+    company: j.company || '',
+    url: j.url || j.link || '',
+    score: j.match || 0,
+    apply_type: j.match >= 85 ? 'full-prep' : 'quick-apply',
+    ats_type: '',
+    easy_apply: false,
+    status: 'queued',
+    materials_ready: false,
+    fields_filled: [],
+    fields_skipped: [],
+    errors: [],
+    screenshot_path: '',
+    submitted_at: '',
+    created_at: new Date().toISOString(),
+    action_log: [{time: new Date().toISOString(), action: 'queued', details: 'Added from dashboard'}],
+  });
+  saveData(); renderQueue();
+  logAction('queue', `Added to queue: ${j.title} at ${j.company}`);
+}
+
+// ===================== V4: KANBAN PIPELINE FUNCTIONS =====================
+function renderPipeline() {
+  const stages = ['discovered', 'queued', 'applied', 'screening', 'interview', 'offer', 'rejected'];
+  // Map applications to pipeline stages
+  const stageMap = {};
+  stages.forEach(s => stageMap[s] = []);
+
+  // Jobs → discovered
+  (data.jobs || []).forEach((j, i) => {
+    const inApp = (data.applications || []).find(a => a.role === j.title && a.company === j.company);
+    const inQueue = (data.applicationQueue || []).find(a => a.job_title === j.title && a.company === j.company);
+    if (!inApp && !inQueue) stageMap.discovered.push({title: j.title, company: j.company, score: j.match, id: 'job_' + i});
+  });
+
+  // Queue → queued
+  (data.applicationQueue || []).filter(a => ['queued','filling','ready-for-review'].includes(a.status)).forEach(a => {
+    stageMap.queued.push({title: a.job_title, company: a.company, score: a.score, id: a.id});
+  });
+
+  // Applications → various stages
+  (data.applications || []).forEach((a, i) => {
+    const stage = a.status === 'followup' ? 'applied' : (stages.includes(a.status) ? a.status : 'applied');
+    stageMap[stage].push({title: a.role, company: a.company, score: 0, id: 'app_' + i, days: daysSince(a.date)});
+  });
+
+  // Submitted queue items → applied
+  (data.applicationQueue || []).filter(a => a.status === 'submitted').forEach(a => {
+    stageMap.applied.push({title: a.job_title, company: a.company, score: a.score, id: a.id});
+  });
+
+  stages.forEach(stage => {
+    const col = document.getElementById(`k-col-${stage}`);
+    const count = document.getElementById(`k-count-${stage}`);
+    if (!col) return;
+    count.textContent = stageMap[stage].length;
+    col.innerHTML = stageMap[stage].slice(0, 20).map(item => `
+      <div class="kanban-card" draggable="true" ondragstart="kanbanDragStart(event,'${item.id}')" data-id="${item.id}">
+        <div class="kc-title">${escapeHtml(item.title || '')}</div>
+        <div class="kc-company">${escapeHtml(item.company || '')}</div>
+        <div class="kc-meta">
+          ${item.score ? `<span>${item.score}%</span>` : ''}
+          ${item.days !== undefined ? `<span>${item.days}d</span>` : ''}
+        </div>
+      </div>
+    `).join('');
+  });
+}
+
+function kanbanDragStart(e, id) { e.dataTransfer.setData('text/plain', id); }
+function kanbanDrop(e, stage) {
+  e.preventDefault();
+  const id = e.dataTransfer.getData('text/plain');
+  // Update the item's stage in the data
+  const app = (data.applications || []).find((a, i) => 'app_' + i === id);
+  if (app) { app.status = stage; saveData(); renderPipeline(); logAction('pipeline', `Moved ${app.role} to ${stage}`); }
+  const qItem = (data.applicationQueue || []).find(a => a.id === id);
+  if (qItem && stage === 'applied') { qItem.status = 'submitted'; qItem.submitted_at = new Date().toISOString(); saveData(); renderPipeline(); }
+}
+
+function daysSince(dateStr) {
+  if (!dateStr) return undefined;
+  const d = new Date(dateStr);
+  return Math.floor((Date.now() - d.getTime()) / 86400000);
+}
+
+// ===================== V4: ACTION LOG FUNCTIONS =====================
+function logAction(type, message) {
+  const entry = { time: new Date().toISOString(), type, message };
+  data.actionLog = data.actionLog || [];
+  data.actionLog.unshift(entry);
+  if (data.actionLog.length > 500) data.actionLog = data.actionLog.slice(0, 500);
+  saveData();
+  renderActionLog();
+}
+
+function renderActionLog() {
+  const container = document.getElementById('action-log-feed');
+  if (!container) return;
+  const filter = document.getElementById('log-type-filter')?.value || 'all';
+  let logs = (data.actionLog || []).slice(0, 200);
+  if (filter !== 'all') logs = logs.filter(l => l.type === filter);
+  if (logs.length === 0) {
+    container.innerHTML = '<div style="padding:10px;color:#8B949E;text-align:center;">No log entries yet.</div>';
+    return;
+  }
+  container.innerHTML = logs.slice(0, 100).map(l => {
+    const time = l.time ? new Date(l.time).toLocaleTimeString() : '';
+    const date = l.time ? new Date(l.time).toLocaleDateString() : '';
+    const colorMap = {discovery:'#58A6FF',apply:'#3FB950',queue:'#58A6FF',error:'#F85149',config:'#D29922',engine:'#D29922',pipeline:'#58A6FF',import:'#3FB950',export:'#D29922',qa:'#58A6FF'};
+    const color = colorMap[l.type] || '#58A6FF';
+    return `<div style="padding:3px 0;border-bottom:1px solid #21262D;"><span style="color:#8B949E;font-size:11px;">${date} ${time}</span> <span style="color:${color};font-weight:600;">[${l.type}]</span> <span style="color:#e0e0e0;">${escapeHtml(l.message)}</span></div>`;
+  }).join('');
+}
+
+// ===================== V4: IMPORT ENGINE DATA =====================
+function importEngineData() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+  input.onchange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const imported = JSON.parse(ev.target.result);
+        // Import discovered jobs
+        if (imported.discoveredJobs) {
+          let added = 0;
+          imported.discoveredJobs.forEach(j => {
+            const exists = data.jobs.find(ej => ej.title === j.title && ej.company === j.company);
+            if (!exists) {
+              data.jobs.push({
+                id: j.raw_id || j.id || '',
+                title: j.title,
+                company: j.company || '',
+                location: j.location || '',
+                url: j.url || '',
+                description: j.description || '',
+                match: j.match || 0,
+                sector: j.sector || 'tech',
+                posted: j.posted_date || '',
+                status: 'new',
+                salary: j.salary_range || '',
+                board: j.board_source || '',
+                sources: j.sources || [],
+                easy_apply: j.easy_apply || false,
+                ats_platform: j.ats_platform || '',
+              });
+              added++;
+            }
+          });
+          logAction('import', `Imported ${added} new jobs from engine`);
+        }
+        // Import queue
+        if (imported.applicationQueue) {
+          data.applicationQueue = imported.applicationQueue;
+          logAction('import', `Imported ${imported.applicationQueue.length} queue items`);
+        }
+        // Import analytics
+        if (imported.analytics) {
+          data.engineAnalytics = imported.analytics;
+        }
+        // Import Q&A bank
+        if (imported.qaBank) {
+          data.qaBank = imported.qaBank;
+        }
+        if (imported.materialVariants) {
+          data.materialVariants = imported.materialVariants;
+          logAction('import', 'Imported material variants data');
+        }
+        saveData();
+        renderJobs();
+        renderQueue();
+        renderPipeline();
+        updateControlStats();
+        alert(`Import complete! Check the dashboard for new data.`);
+      } catch (err) {
+        alert('Import failed: ' + err.message);
+      }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+// ===================== V4: Q&A BANK FUNCTIONS =====================
+function renderQABank() {
+  const container = document.getElementById('qa-bank-list');
+  if (!container) return;
+  const filter = document.getElementById('qa-filter')?.value || 'all';
+  let entries = data.qaBank || [];
+  if (filter !== 'all') entries = entries.filter(e => e.category === filter);
+  document.getElementById('qa-count').textContent = `${entries.length} entries`;
+
+  if (entries.length === 0) {
+    container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--gray);font-size:13px;">No Q&A entries yet. Add manually or import from the Python engine.</div>';
+    return;
+  }
+
+  container.innerHTML = `<table class="tracker-table">
+    <thead><tr><th>Category</th><th>Question</th><th>Answer</th><th>Actions</th></tr></thead>
+    <tbody>${entries.map((e, i) => `<tr>
+      <td><span class="status-badge" style="background:var(--blue-light);color:var(--blue);">${escapeHtml(e.category || 'custom')}</span></td>
+      <td style="max-width:250px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${escapeHtml((e.question||'').replace(/"/g,'&quot;'))}">${escapeHtml(e.question || '')}</td>
+      <td style="max-width:300px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${escapeHtml((e.answer||'').replace(/"/g,'&quot;'))}">${escapeHtml(e.answer || '')}</td>
+      <td>
+        <button class="btn btn-outline" style="font-size:10px;" onclick="editQAEntry(${i})">Edit</button>
+        <button class="btn btn-danger" style="font-size:10px;" onclick="deleteQAEntry(${i})">Del</button>
+      </td>
+    </tr>`).join('')}</tbody>
+  </table>`;
+}
+
+function addQAEntry() {
+  const q = prompt('Question:');
+  if (!q) return;
+  const a = prompt('Answer:');
+  if (!a) return;
+  const cat = prompt('Category (personal/experience/behavioral/technical/compensation/availability/custom):', 'custom') || 'custom';
+  data.qaBank = data.qaBank || [];
+  data.qaBank.push({ question: q, answer: a, category: cat, lastUsed: null });
+  saveData(); renderQABank();
+  logAction('qa', `Added Q&A: ${q.slice(0, 50)}`);
+}
+
+function editQAEntry(idx) {
+  const entry = data.qaBank[idx];
+  if (!entry) return;
+  const q = prompt('Question:', entry.question);
+  if (q === null) return;
+  const a = prompt('Answer:', entry.answer);
+  if (a === null) return;
+  entry.question = q;
+  entry.answer = a;
+  saveData(); renderQABank();
+}
+
+function deleteQAEntry(idx) {
+  if (!confirm('Delete this Q&A entry?')) return;
+  data.qaBank.splice(idx, 1);
+  saveData(); renderQABank();
+}
+
+function exportQABank() {
+  const blob = new Blob([JSON.stringify(data.qaBank || [], null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'qa_bank.json'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function renderResumeProfile() {
+  const container = document.getElementById('resume-profile-display');
+  const status = document.getElementById('resume-status');
+  if (!container) return;
+  const profile = data.resumeProfile;
+  if (!profile) {
+    if (status) status.style.display = '';
+    container.innerHTML = '';
+    return;
+  }
+  if (status) status.style.display = 'none';
+  const contact = profile.contact || {};
+  const skills = profile.skills || {};
+  const exp = profile.experience || [];
+  const edu = profile.education || [];
+  container.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12px;">
+      <div><strong>Name:</strong> ${contact.name || 'N/A'}</div>
+      <div><strong>Email:</strong> ${contact.email || 'N/A'}</div>
+      <div><strong>Phone:</strong> ${contact.phone || 'N/A'}</div>
+      <div><strong>Location:</strong> ${contact.location || 'N/A'}</div>
+      <div style="grid-column:span 2;"><strong>LinkedIn:</strong> ${contact.linkedin || 'N/A'}</div>
+    </div>
+    <div style="margin-top:10px;font-size:12px;">
+      <strong>Skills (${Object.values(skills).flat().length} total):</strong>
+      <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;">
+        ${Object.entries(skills).map(([cat, items]) =>
+          items.map(s => `<span style="background:var(--blue-light);color:var(--blue);padding:2px 6px;border-radius:4px;font-size:10px;">${s}</span>`).join('')
+        ).join('')}
+      </div>
+    </div>
+    <div style="margin-top:10px;font-size:12px;"><strong>Experience:</strong> ${exp.length} entries | <strong>Education:</strong> ${edu.length} entries</div>
+  `;
+}
+
+// ===================== UTILITY FUNCTIONS =====================
+function showPanel(name) {
+  document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+  document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
+  const panel = document.getElementById(`panel-${name}`);
+  if (panel) panel.classList.add("active");
+  const navItem = document.querySelector(`[data-panel="${name}"]`);
+  if (navItem) navItem.classList.add("active");
+}
+
+function showModal(id) { document.getElementById(id).classList.add("show"); }
+function closeModal(id) { document.getElementById(id).classList.remove("show"); }
+
+function addLog(msg) {
+  const entry = { time: new Date().toLocaleString(), msg };
+  data.logs = data.logs || [];
+  data.logs.unshift(entry);
+  renderLogs();
+}
+
+function renderLogs() {
+  const el = document.getElementById("log-list");
+  if (!data.logs || data.logs.length === 0) { el.innerHTML = "<em>No activity yet.</em>"; return; }
+  el.innerHTML = data.logs.slice(0, 50).map(l => `<div style="padding:4px 0;border-bottom:1px solid #F3F4F6;">[${l.time}] ${l.msg}</div>`).join("");
+}
+
+// ===================== MATERIALS A/B (v4.1) =====================
+
+function getVariantStatusLabel(v) {
+  const apps = v.applications_used || 0;
+  if (apps === 0) return '<span style="color:#F59E0B;font-weight:600;">New</span>';
+  const score = v.composite_score || 0;
+  if (score > 1.5) return '<span style="color:#10B981;font-weight:600;">Top</span>';
+  if (score > 0) return '<span style="color:#3B82F6;font-weight:600;">Active</span>';
+  return '<span style="color:#EF4444;font-weight:600;">Low</span>';
+}
+
+function renderResumeVariants() {
+  const tbody = document.getElementById('rv-table-body');
+  if (!tbody) return;
+  const filter = (document.getElementById('rv-sector-filter') || {}).value || 'all';
+  const variants = (data.materialVariants.resume_variants || []).filter(v =>
+    filter === 'all' || v.sector === filter
+  );
+  if (!variants.length) { tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--gray);">No resume variants yet. Click "+ Add Variant" to register one.</td></tr>'; return; }
+  tbody.innerHTML = variants.map((v, i) => {
+    const apps = v.applications_used || 0;
+    const cbRate = apps ? ((v.callbacks || 0) / apps * 100).toFixed(1) : '—';
+    const ivRate = apps ? ((v.interviews || 0) / apps * 100).toFixed(1) : '—';
+    return `<tr>
+      <td><strong>${escapeHtml(v.name)}</strong><div style="font-size:10px;color:var(--gray);">${escapeHtml(v.description || '')}</div></td>
+      <td>${v.sector}</td><td>${apps}</td><td>${v.callbacks || 0} (${cbRate}%)</td><td>${v.interviews || 0} (${ivRate}%)</td><td>${v.offers || 0}</td>
+      <td><strong>${(v.composite_score || 0).toFixed(2)}</strong></td><td>${getVariantStatusLabel(v)}</td>
+      <td><button class="btn btn-outline" style="font-size:10px;padding:2px 6px;" onclick="toggleVariantActive('resume',${i})">${v.is_active !== false ? 'Deactivate' : 'Activate'}</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function renderCLVariants() {
+  const tbody = document.getElementById('cl-variant-table-body');
+  if (!tbody) return;
+  const filter = (document.getElementById('cl-sector-filter') || {}).value || 'all';
+  const variants = (data.materialVariants.cover_letter_variants || []).filter(v =>
+    filter === 'all' || v.sector === filter
+  );
+  if (!variants.length) { tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--gray);">No cover letter variants yet.</td></tr>'; return; }
+  tbody.innerHTML = variants.map((v, i) => {
+    const apps = v.applications_used || 0;
+    const cbRate = apps ? ((v.callbacks || 0) / apps * 100).toFixed(1) : '—';
+    const ivRate = apps ? ((v.interviews || 0) / apps * 100).toFixed(1) : '—';
+    return `<tr>
+      <td><strong>${escapeHtml(v.name)}</strong></td><td>${escapeHtml(v.tone || 'professional')}</td><td>${v.sector}</td><td>${apps}</td>
+      <td>${v.callbacks || 0} (${cbRate}%)</td><td>${v.interviews || 0} (${ivRate}%)</td>
+      <td><strong>${(v.composite_score || 0).toFixed(2)}</strong></td><td>${getVariantStatusLabel(v)}</td>
+      <td><button class="btn btn-outline" style="font-size:10px;padding:2px 6px;" onclick="toggleVariantActive('cl',${i})">${v.is_active !== false ? 'Deactivate' : 'Activate'}</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function renderMaterialPerformance() {
+  // Best resume by sector
+  const bestResume = document.getElementById('ab-best-resume');
+  const bestCL = document.getElementById('ab-best-cl');
+  const pairingsBody = document.getElementById('ab-pairings-body');
+  if (!bestResume) return;
+
+  const sectors = ['biotech', 'tech', 'defense', 'startup', 'general'];
+  const rvs = data.materialVariants.resume_variants || [];
+  const clvs = data.materialVariants.cover_letter_variants || [];
+
+  bestResume.innerHTML = sectors.map(s => {
+    const inSector = rvs.filter(v => v.sector === s && (v.applications_used || 0) > 0);
+    if (!inSector.length) return `<div style="font-size:12px;margin:4px 0;"><span style="text-transform:capitalize;font-weight:500;">${s}:</span> <span style="color:var(--gray);">No data</span></div>`;
+    const best = inSector.sort((a, b) => (b.composite_score || 0) - (a.composite_score || 0))[0];
+    return `<div style="font-size:12px;margin:4px 0;"><span style="text-transform:capitalize;font-weight:500;">${s}:</span> ${best.name} <span style="color:#10B981;font-weight:600;">(${(best.composite_score || 0).toFixed(2)})</span></div>`;
+  }).join('');
+
+  bestCL.innerHTML = sectors.map(s => {
+    const inSector = clvs.filter(v => v.sector === s && (v.applications_used || 0) > 0);
+    if (!inSector.length) return `<div style="font-size:12px;margin:4px 0;"><span style="text-transform:capitalize;font-weight:500;">${s}:</span> <span style="color:var(--gray);">No data</span></div>`;
+    const best = inSector.sort((a, b) => (b.composite_score || 0) - (a.composite_score || 0))[0];
+    return `<div style="font-size:12px;margin:4px 0;"><span style="text-transform:capitalize;font-weight:500;">${s}:</span> ${best.name} <span style="color:#10B981;font-weight:600;">(${(best.composite_score || 0).toFixed(2)})</span></div>`;
+  }).join('');
+
+  // Pairings table
+  const pairings = data.materialVariants.material_pairings || [];
+  if (!pairings.length) { pairingsBody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--gray);">No pairings recorded yet. Run the apply engine to generate pairings.</td></tr>'; return; }
+  const rvMap = {}; rvs.forEach(v => rvMap[v.id] = v.name);
+  const clMap = {}; clvs.forEach(v => clMap[v.id] = v.name);
+  pairingsBody.innerHTML = pairings.slice(-50).reverse().map(p => {
+    const outcomeColor = {callback:'#3B82F6',interview:'#10B981',offer:'#F59E0B',rejected:'#EF4444',ghosted:'#6B7280'}[p.outcome] || '#9CA3AF';
+    return `<tr>
+      <td>${escapeHtml(p.application_id || '—')}</td><td>${escapeHtml(rvMap[p.resume_variant_id] || p.resume_variant_id || '—')}</td>
+      <td>${escapeHtml(clMap[p.cover_letter_variant_id] || p.cover_letter_variant_id || '—')}</td>
+      <td>${p.sector || '—'}</td><td>${p.reason || '—'}</td>
+      <td><span style="color:${outcomeColor};font-weight:600;">${p.outcome || 'pending'}</span></td>
+      <td>${!p.outcome ? `<button class="btn btn-outline" style="font-size:10px;padding:2px 6px;" onclick="openOutcomeModal('${p.id}','${p.application_id}')">Record</button>` : ''}</td>
+    </tr>`;
+  }).join('');
+}
+
+function createResumeVariant() {
+  const name = document.getElementById('rv-name').value.trim();
+  const sector = document.getElementById('rv-sector').value;
+  const filePath = document.getElementById('rv-filepath').value.trim();
+  const desc = document.getElementById('rv-desc').value.trim();
+  if (!name) { alert('Name is required'); return; }
+  const variant = {
+    id: 'rv_' + Date.now(), name, sector, file_path: filePath, description: desc,
+    created_by: 'manual', created_at: new Date().toISOString(), is_active: true,
+    applications_used: 0, callbacks: 0, interviews: 0, offers: 0, rejections: 0, ghosted: 0, composite_score: 0
+  };
+  data.materialVariants.resume_variants.push(variant);
+  saveData(); closeModal('modal-add-rv'); renderResumeVariants();
+  logAction('Created resume variant: ' + name + ' (' + sector + ')', 'config');
+}
+
+function createCLVariant() {
+  const name = document.getElementById('clv-name').value.trim();
+  const tone = document.getElementById('clv-tone').value;
+  const sector = document.getElementById('clv-sector').value;
+  const template = document.getElementById('clv-template').value.trim();
+  if (!name) { alert('Name is required'); return; }
+  const variant = {
+    id: 'clv_' + Date.now(), name, tone, sector, template_text: template,
+    created_by: 'manual', created_at: new Date().toISOString(), is_active: true,
+    applications_used: 0, callbacks: 0, interviews: 0, offers: 0, rejections: 0, ghosted: 0, composite_score: 0
+  };
+  data.materialVariants.cover_letter_variants.push(variant);
+  saveData(); closeModal('modal-add-cl-variant'); renderCLVariants();
+  logAction('Created CL variant: ' + name + ' (' + sector + ')', 'config');
+}
+
+function toggleVariantActive(type, idx) {
+  const arr = type === 'resume' ? data.materialVariants.resume_variants : data.materialVariants.cover_letter_variants;
+  if (arr[idx]) { arr[idx].is_active = !arr[idx].is_active; saveData(); }
+  type === 'resume' ? renderResumeVariants() : renderCLVariants();
+}
+
+function openOutcomeModal(pairingId, appId) {
+  document.getElementById('outcome-pairing-id').value = pairingId || '';
+  document.getElementById('outcome-app-idx').value = appId || '';
+  const app = (data.applications || []).find(a => a.id === appId);
+  document.getElementById('outcome-company').value = app ? app.company : appId;
+  showModal('modal-record-outcome');
+}
+
+function submitOutcome() {
+  const pairingId = document.getElementById('outcome-pairing-id').value;
+  const outcome = document.getElementById('outcome-value').value;
+  // Update pairing
+  const pairings = data.materialVariants.material_pairings || [];
+  const pairing = pairings.find(p => p.id === pairingId);
+  if (pairing) {
+    pairing.outcome = outcome;
+    pairing.outcome_recorded_at = new Date().toISOString();
+    // Update variant counters
+    const weights = {callback: 'callbacks', interview: 'interviews', offer: 'offers', rejected: 'rejections', ghosted: 'ghosted'};
+    const field = weights[outcome];
+    if (field) {
+      const rv = (data.materialVariants.resume_variants || []).find(v => v.id === pairing.resume_variant_id);
+      const clv = (data.materialVariants.cover_letter_variants || []).find(v => v.id === pairing.cover_letter_variant_id);
+      if (rv) { rv[field] = (rv[field] || 0) + 1; recalcScore(rv); }
+      if (clv) { clv[field] = (clv[field] || 0) + 1; recalcScore(clv); }
+    }
+  }
+  saveData(); closeModal('modal-record-outcome');
+  renderResumeVariants(); renderCLVariants(); renderMaterialPerformance();
+  logAction('Recorded outcome: ' + outcome + ' for pairing ' + pairingId, 'apply');
+}
+
+function recalcScore(v) {
+  const apps = Math.max(v.applications_used || 1, 1);
+  const raw = ((v.callbacks || 0) * 1 + (v.interviews || 0) * 3 + (v.offers || 0) * 5 - (v.rejections || 0) * 1 - (v.ghosted || 0) * 2) / apps;
+  v.composite_score = raw * Math.min(1.0, apps / 3);
+}
+
+function importMaterialsData() {
+  const input = document.createElement('input');
+  input.type = 'file'; input.accept = '.json';
+  input.onchange = e => {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const imported = JSON.parse(ev.target.result);
+        if (imported.resume_variants) data.materialVariants.resume_variants = imported.resume_variants;
+        if (imported.cover_letter_variants) data.materialVariants.cover_letter_variants = imported.cover_letter_variants;
+        if (imported.material_pairings) data.materialVariants.material_pairings = imported.material_pairings;
+        saveData(); renderResumeVariants(); renderCLVariants(); renderMaterialPerformance();
+        logAction('Imported materials data from file', 'engine');
+        alert('Materials data imported successfully!');
+      } catch (err) { alert('Invalid JSON file: ' + err.message); }
+    };
+    reader.readAsText(e.target.files[0]);
+  };
+  input.click();
+}
+
+function updateStats() {
+  renderMomentum();
+  // Update stat cards
+  const jobs = data.jobs || [];
+  const apps = data.applications || [];
+  const queue = data.applicationQueue || [];
+  document.getElementById('stat-discovered').textContent = jobs.length;
+  document.getElementById('stat-queued').textContent = queue.filter(a => a.status === 'queued').length + apps.filter(a => a.status === 'queued').length;
+  document.getElementById('stat-applied').textContent = apps.filter(a => a.status === 'applied').length + queue.filter(a => a.status === 'submitted').length;
+  document.getElementById('stat-interviews').textContent = apps.filter(a => a.status === 'interview').length;
+  document.getElementById('stat-followups').textContent = (data.followups || []).filter(f => !f.done).length;
+  document.getElementById('stat-network').textContent = (data.networking || []).length;
+  document.getElementById('stat-coached').textContent = (data.interviewPrep || []).length;
+  // Update queue badge
+  const queueBadge = document.getElementById('badge-queue');
+  const queuedCount = queue.filter(a => a.status === 'queued').length;
+  if (queueBadge) { queueBadge.textContent = queuedCount; queueBadge.style.display = queuedCount > 0 ? '' : 'none'; }
+  // Update followups badge
+  const fuBadge = document.getElementById('badge-followups');
+  const fuCount = (data.followups || []).filter(f => !f.done).length;
+  if (fuBadge) { fuBadge.textContent = fuCount; fuBadge.style.display = fuCount > 0 ? '' : 'none'; }
+  // Update control stats
+  updateControlStats();
+}
+
+function saveData() {
+  try { localStorage.setItem("jobSearchData", JSON.stringify(data)); } catch(e) { /* localStorage may not be available */ }
+}
+
+function loadData() {
+  try {
+    const saved = localStorage.getItem("jobSearchData");
+    if (saved) { data = JSON.parse(saved); }
+  } catch(e) { /* use defaults */ }
+}
+
+function saveSettings() {
+  data.settings.email = document.getElementById("settings-email").value;
+  data.settings.frequency = document.getElementById("settings-frequency").value;
+  data.settings.threshold = parseInt(document.getElementById("settings-threshold").value);
+  data.settings.features = {
+    discovery: document.getElementById("toggle-discovery").checked,
+    ranking: document.getElementById("toggle-ranking").checked,
+    coverletter: document.getElementById("toggle-coverletter").checked,
+    autoapplyTop: document.getElementById("toggle-autoapply-top").checked,
+    autoapplyAll: document.getElementById("toggle-autoapply-all").checked,
+    tracking: document.getElementById("toggle-tracking").checked,
+    followups: document.getElementById("toggle-followups").checked,
+    networking: document.getElementById("toggle-networking").checked,
+    coaching: document.getElementById("toggle-coaching").checked,
+    email: document.getElementById("toggle-email").checked,
+    dedup: document.getElementById("toggle-dedup").checked,
+    salaryfloor: document.getElementById("toggle-salaryfloor").checked
+  };
+  saveData();
+}
+
+function loadSettings() {
+  if (data.settings) {
+    document.getElementById("settings-email").value = data.settings.email || "";
+    document.getElementById("settings-frequency").value = data.settings.frequency || "2x";
+    document.getElementById("settings-threshold").value = data.settings.threshold || 60;
+    const f = data.settings.features || {};
+    document.getElementById("toggle-discovery").checked = f.discovery !== false;
+    document.getElementById("toggle-ranking").checked = f.ranking !== false;
+    document.getElementById("toggle-coverletter").checked = f.coverletter !== false;
+    document.getElementById("toggle-autoapply-top").checked = !!f.autoapplyTop;
+    document.getElementById("toggle-autoapply-all").checked = !!f.autoapplyAll;
+    document.getElementById("toggle-tracking").checked = f.tracking !== false;
+    document.getElementById("toggle-followups").checked = f.followups !== false;
+    document.getElementById("toggle-networking").checked = f.networking !== false;
+    document.getElementById("toggle-coaching").checked = f.coaching !== false;
+    document.getElementById("toggle-email").checked = f.email !== false;
+    document.getElementById("toggle-dedup").checked = f.dedup !== false;
+    document.getElementById("toggle-salaryfloor").checked = !!f.salaryfloor;
+  }
+}
+
+function runManualScan() {
+  addLog("Manual scan triggered. In a live environment, this calls the Python scraper.");
+  document.getElementById("lastScan").textContent = new Date().toLocaleString();
+  // Load sample data if no jobs exist
+  if (data.jobs.length === 0) {
+    data.jobs = [
+      { id:"demo-1", title:"Product Manager", company:"TechCorp", location:"San Francisco, CA", url:"#", description:"Lead product strategy for our SaaS platform. Work with engineering, design, and marketing to deliver features that drive user engagement and revenue growth.", posted:"2026-02-24", source:"indeed", sector:"tech", salary:"$130K-$170K" },
+      { id:"demo-2", title:"Senior Software Engineer", company:"CloudStart", location:"Remote", url:"#", description:"Build scalable cloud infrastructure for enterprise clients. Design and implement backend systems using modern cloud technologies and best practices.", posted:"2026-02-23", source:"linkedin", sector:"tech", salary:"$150K-$200K" },
+      { id:"demo-3", title:"Marketing Manager", company:"GreenLeaf Health", location:"Boston, MA", url:"#", description:"Drive brand awareness for our digital health platform. Develop marketing strategy, manage campaigns, and collaborate with product and sales teams.", posted:"2026-02-22", source:"glassdoor", sector:"healthcare", salary:"$95K-$130K" },
+      { id:"demo-4", title:"Data Scientist", company:"AnalyticsHub", location:"New York, NY", url:"#", description:"Build machine learning models for predictive analytics. Work with cross-functional teams to translate business questions into data solutions.", posted:"2026-02-21", source:"indeed", sector:"tech", salary:"$120K-$160K" },
+      { id:"demo-5", title:"UX Designer", company:"CreativeStudio", location:"Austin, TX", url:"#", description:"Design intuitive user experiences for web and mobile applications. Conduct user research, create prototypes, and collaborate with product teams.", posted:"2026-02-20", source:"linkedin", sector:"tech", salary:"$110K-$150K" },
+      { id:"demo-6", title:"Operations Manager", company:"LogisticsPro", location:"Chicago, IL", url:"#", description:"Oversee day-to-day operations and process improvements. Lead a team and drive efficiency across supply chain and fulfillment functions.", posted:"2026-02-19", source:"glassdoor", sector:"operations", salary:"$85K-$125K" },
+      { id:"demo-7", title:"Business Analyst", company:"FinanceFirst", location:"Denver, CO", url:"#", description:"Analyze business requirements and provide recommendations for system improvements. Work with stakeholders to define project scope and deliverables.", posted:"2026-02-18", source:"indeed", sector:"finance", salary:"$75K-$105K" },
+      { id:"demo-8", title:"Senior Product Manager", company:"InnovateTech", location:"Seattle, WA", url:"#", description:"Lead end-to-end product development for AI-powered solutions. Set vision and strategy for product line across multiple business units.", posted:"2026-02-17", source:"linkedin", sector:"tech", salary:"$160K-$220K" },
+      { id:"demo-9", title:"Customer Success Manager", company:"SaaSGrow", location:"Los Angeles, CA", url:"#", description:"Manage key customer relationships and ensure successful platform adoption. Drive retention and expansion within your book of business.", posted:"2026-02-16", source:"glassdoor", sector:"tech", salary:"$90K-$130K" }
+    ];
+    renderJobs();
+    addLog(`Loaded ${data.jobs.length} sample job listings with direct listing URLs.`);
+  }
+  saveData(); updateStats();
+}
+
+function exportData() {
+  // Build comprehensive export including v4 data
+  const exportObj = {
+    ...data,
+    exportedAt: new Date().toISOString(),
+    version: '4.0',
+    automationConfig: data.automationConfig || {},
+    applicationQueue: data.applicationQueue || [],
+    qaBank: data.qaBank || [],
+    actionLog: (data.actionLog || []).slice(0, 200),
+    resumeProfile: data.resumeProfile || null,
+    materialVariants: data.materialVariants || {},
+  };
+  const blob = new Blob([JSON.stringify(exportObj, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "job_search_export.json"; a.click();
+  URL.revokeObjectURL(url);
+  // Also export watchlist separately for the Python scraper
+  if (data.watchlist && data.watchlist.length > 0) {
+    const watchBlob = new Blob([JSON.stringify(data.watchlist.filter(w => w.status === 'active'), null, 2)], { type: "application/json" });
+    const watchUrl = URL.createObjectURL(watchBlob);
+    const b = document.createElement("a");
+    b.href = watchUrl; b.download = "career_pages.json"; b.click();
+    URL.revokeObjectURL(watchUrl);
+    addLog("Exported watchlist to career_pages.json for scraper.");
+  }
+  // Export automation config for the Python engine
+  const engineConfig = {
+    automation: data.automationConfig || {},
+    user: { name: data.settings?.name || '', email: data.settings?.email || '' },
+    watchlist: (data.watchlist || []).filter(w => w.status === 'active'),
+  };
+  const cfgBlob = new Blob([JSON.stringify(engineConfig, null, 2)], { type: "application/json" });
+  const cfgUrl = URL.createObjectURL(cfgBlob);
+  const c = document.createElement("a");
+  c.href = cfgUrl; c.download = "dashboard_config_export.json"; c.click();
+  URL.revokeObjectURL(cfgUrl);
+  addLog("Exported all data (v4) including automation config and queue.");
+  logAction('export', 'Full data export completed');
+}
+
+// ===================== INIT =====================
+function init() {
+  loadData();
+  loadSettings();
+  // Set dynamic header
+  const userName = data.settings?.name || '';
+  document.getElementById('header-user-name').textContent = userName;
+  document.title = userName ? `JobPilotAI v4.1 | ${userName}` : 'JobPilotAI v4.1';
+  // Initialize new data arrays if missing (backward compat)
+  data.watchlist = data.watchlist || [];
+  data.pitches = data.pitches || [];
+  data.companyResearch = data.companyResearch || [];
+  data.momentum = data.momentum || { weeklyTarget: 6, streakDays: 0, lastActiveDate: null };
+  data.emailTemplates = data.emailTemplates || [];
+  // v4 data initialization
+  data.automationConfig = data.automationConfig || { mode: 'semi-auto', strategy: 'balanced', dailyTarget: 25 };
+  data.applicationQueue = data.applicationQueue || [];
+  data.qaBank = data.qaBank || [];
+  data.actionLog = data.actionLog || [];
+  data.resumeProfile = data.resumeProfile || null;
+  // v4.1 material variants
+  data.materialVariants = data.materialVariants || { resume_variants: [], cover_letter_variants: [], material_pairings: [] };
+  // Render all panels
+  renderJobs();
+  renderTracker();
+  renderFollowups();
+  renderNetworking();
+  renderWatchlist();
+  renderCLLibrary();
+  renderLogs();
+  // v4 renders
+  loadAutomationConfig();
+  renderQueue();
+  renderPipeline();
+  renderActionLog();
+  renderQABank();
+  renderResumeProfile();
+  // v4.1 material variants
+  renderResumeVariants();
+  renderCLVariants();
+  renderMaterialPerformance();
+  updateStats();
+}
+
+document.addEventListener("DOMContentLoaded", init);
+// Close modals on overlay click
+document.querySelectorAll(".modal-overlay").forEach(overlay => {
+  overlay.addEventListener("click", e => { if (e.target === overlay) overlay.classList.remove("show"); });
+});
+</script>
+</body>
+</html>

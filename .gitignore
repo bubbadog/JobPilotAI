@@ -1,0 +1,48 @@
+# ── Python ──
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# ── User Data (contains personal info — never commit) ──
+job_search_config.json
+search_urls.json
+resume_profile.json
+application_queue.json
+material_variants.json
+scoring_weights.json
+job_search_data.json
+engine_export.json
+dashboard_config_export.json
+career_pages.json
+sectors.json
+
+# ── Credentials ──
+.env
+*.key
+*.pem
+
+# ── Runtime Data ──
+data/screenshots/
+screenshots/
+logs/
+*.log
+
+# ── IDE ──
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ── Playwright ──
+playwright-report/
+test-results/
+
+# ── Exports (generated files) ──
+data/exports/
+job_search_export.json

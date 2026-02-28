@@ -1,0 +1,160 @@
+{
+  "user": {
+    "name": "",
+    "email": "",
+    "phone": "",
+    "location": "",
+    "linkedin": ""
+  },
+  "search": {
+    "keywords": [],
+    "locations": [],
+    "excluded_companies": [],
+    "min_match_score": 60,
+    "max_age_days": 14
+  },
+  "features": {
+    "discovery": true,
+    "ranking": true,
+    "coverletter_draft": true,
+    "auto_apply_top": false,
+    "auto_apply_all": false,
+    "email_digest": false,
+    "followup_reminders": true,
+    "dedup": true,
+    "salary_floor": false
+  },
+  "automation": {
+    "mode": "semi-auto",
+    "strategy": "balanced",
+    "daily_target": 25,
+    "pause_before_submit": true,
+    "screenshot_before_submit": true,
+    "headless_full_auto": true,
+    "strategies": {
+      "wide-net": {
+        "min_score": 50,
+        "daily_target": 40,
+        "full_prep_threshold": 80,
+        "quick_apply_threshold": 50
+      },
+      "balanced": {
+        "min_score": 60,
+        "daily_target": 25,
+        "full_prep_threshold": 85,
+        "quick_apply_threshold": 60
+      },
+      "targeted": {
+        "min_score": 85,
+        "daily_target": 10,
+        "full_prep_threshold": 85,
+        "quick_apply_threshold": 0
+      }
+    }
+  },
+  "boards": {
+    "indeed": {
+      "enabled": true,
+      "url": "https://www.indeed.com/jobs?q={query}&l={location}&fromage=7"
+    },
+    "linkedin": {
+      "enabled": true,
+      "url": "https://www.linkedin.com/jobs/search/?keywords={query}&location={location}&f_TPR=r604800"
+    },
+    "glassdoor": {
+      "enabled": true,
+      "url": "https://www.glassdoor.com/Job/jobs.htm?sc.keyword={query}&locT=C"
+    },
+    "ziprecruiter": {
+      "enabled": true,
+      "url": "https://www.ziprecruiter.com/jobs-search?search={query}&location={location}"
+    },
+    "monster": {
+      "enabled": true,
+      "url": "https://www.monster.com/jobs/search?q={query}&where={location}"
+    },
+    "dice": {
+      "enabled": false,
+      "url": "https://www.dice.com/jobs?q={query}&location={location}"
+    },
+    "simplyhired": {
+      "enabled": true,
+      "url": "https://www.simplyhired.com/search?q={query}&l={location}"
+    },
+    "usajobs": {
+      "enabled": false,
+      "url": "https://www.usajobs.gov/Search/Results?k={query}&l={location}"
+    },
+    "wellfound": {
+      "enabled": false,
+      "url": "https://wellfound.com/role/l/{query}/{location}"
+    },
+    "remoteok": {
+      "enabled": false,
+      "url": "https://remoteok.com/remote-{query}-jobs"
+    },
+    "weworkremotely": {
+      "enabled": false,
+      "url": "https://weworkremotely.com/remote-jobs/search?term={query}"
+    },
+    "biospace": {
+      "enabled": false,
+      "url": "https://jobs.biospace.com/jobs?keyword={query}&location={location}"
+    },
+    "clearancejobs": {
+      "enabled": false,
+      "url": "https://www.clearancejobs.com/jobs?keywords={query}"
+    },
+    "higheredjobs": {
+      "enabled": false,
+      "url": "https://www.higheredjobs.com/search/default.cfm?search={query}"
+    }
+  },
+  "scoring": {
+    "keyword_weights": {},
+    "seniority_boosts": {
+      "senior": 8,
+      "staff": 6,
+      "principal": 6,
+      "lead": 5,
+      "director": 3,
+      "junior": -3,
+      "intern": -8
+    },
+    "company_tiers": {},
+    "preferred_locations": {}
+  },
+  "rate_limits": {
+    "indeed": { "min_delay": 3, "max_delay": 7, "daily_cap": 200 },
+    "linkedin": { "min_delay": 5, "max_delay": 10, "daily_cap": 100 },
+    "glassdoor": { "min_delay": 4, "max_delay": 8, "daily_cap": 150 },
+    "ziprecruiter": { "min_delay": 3, "max_delay": 6, "daily_cap": 200 },
+    "default": { "min_delay": 2, "max_delay": 5, "daily_cap": 300 }
+  },
+  "schedule": {
+    "frequency": "2x",
+    "times": ["08:00", "14:00"],
+    "discovery_interval_hours": 12,
+    "apply_interval_hours": 24
+  },
+  "email_settings": {
+    "notification_email": "",
+    "smtp_server": "",
+    "smtp_port": 587
+  },
+  "materials": {
+    "ab_testing_enabled": true,
+    "exploration_rate": 0.15,
+    "min_applications_for_scoring": 3,
+    "default_sectors": ["tech", "general"],
+    "score_weights": {
+      "callback": 1,
+      "interview": 3,
+      "offer": 5,
+      "rejected": -1,
+      "ghosted": -2
+    },
+    "auto_generate_suggestions": false,
+    "max_active_variants_per_sector": 4
+  }
+}
