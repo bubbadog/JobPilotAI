@@ -349,7 +349,25 @@ COVER_LETTER_TEMPLATES = {
 
 
 def generate_cover_letter_draft(job, config, tone="confident"):
-    """Generate a cover letter draft for a job listing."""
+    """Generate a cover letter draft for a job listing.
+
+    Tries AI generation first (via ai_engine), falls back to templates if unavailable.
+    """
+    # Try AI-powered generation first
+    try:
+        from ai_engine import get_engine
+        from resume_parser import load_profile
+        engine = get_engine(SCRIPT_DIR, config)
+        if engine.is_available():
+            profile = load_profile(SCRIPT_DIR)
+            if profile:
+                ai_letter = engine.generate_cover_letter(job, profile, tone=tone)
+                if ai_letter:
+                    return ai_letter
+    except (ImportError, Exception) as e:
+        log(f"AI cover letter unavailable ({e}), using template", {})
+
+    # Fallback: template-based generation
     title = job.get("title", "")
     company = job.get("company", "")
     sector = job.get("sector", "tech")

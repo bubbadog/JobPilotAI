@@ -39,6 +39,14 @@ Usage:
   python main.py export                          # Export all data for dashboard import
 
   python main.py init                            # Run interactive setup wizard
+
+  python main.py ai-cover-letter --job-id ID [--tone confident]  # AI cover letter
+  python main.py ai-score --job-id ID              # AI-enhanced job scoring
+  python main.py ai-interview --question "..." --job-id ID  # AI interview answer
+  python main.py ai-research --company "Acme Corp" # AI company research
+  python main.py ai-pitch --job-id ID              # AI elevator pitch
+  python main.py ai-coach --job-id ID              # AI interview coaching guide
+  python main.py ai-usage                          # Show AI usage stats
 """
 
 import asyncio
@@ -52,6 +60,15 @@ sys.path.insert(0, str(SCRIPT_DIR))
 
 from config_manager import ConfigManager
 from rate_limiter import get_limiter
+
+
+def _auto_export(config):
+    """Silently export engine data so the dashboard auto-syncs on refresh."""
+    try:
+        cmd_export([], config)
+        print("  (Dashboard auto-sync file updated)")
+    except Exception:
+        pass  # Non-critical — don't break the main command
 
 
 def cmd_discover(args, config):
@@ -116,7 +133,9 @@ def cmd_discover(args, config):
 
         return scored
 
-    return asyncio.run(run())
+    result = asyncio.run(run())
+    _auto_export(config)
+    return result
 
 
 def cmd_apply(args, config):
@@ -151,7 +170,9 @@ def cmd_apply(args, config):
 
         return await engine.process_queue(limit=limit, dry_run=dry_run)
 
-    return asyncio.run(run())
+    result = asyncio.run(run())
+    _auto_export(config)
+    return result
 
 
 def cmd_full_cycle(args, config):
@@ -204,6 +225,8 @@ def cmd_full_cycle(args, config):
     stats = engine.queue.get_stats()
     print(f"Queue: {stats['total']} total | {stats['queued']} pending | {stats['submitted']} submitted | {stats['errors']} errors")
     print(f"Today: {stats['today_submitted']} submitted")
+
+    _auto_export(config)
 
 
 def cmd_resume(args, config):
@@ -514,6 +537,360 @@ def cmd_init(args, config):
     wizard.run()
 
 
+# =====================================================================
+# AI-POWERED COMMANDS
+# =====================================================================
+
+def _load_job_by_id(job_id):
+    """Load a job from discovered_jobs.json by ID."""
+    jobs_file = SCRIPT_DIR / "discovered_jobs.json"
+    if not jobs_file.exists():
+        print("No discovered_jobs.json found. Run: python main.py discover")
+        return None
+    with open(jobs_file) as f:
+        jobs = json.load(f)
+    for job in jobs:
+        if job.get("id") == job_id or job.get("job_id") == job_id:
+            return job
+    # Try partial match
+    for job in jobs:
+        jid = job.get("id", job.get("job_id", ""))
+        if job_id in jid:
+            return job
+    print(f"Job ID '{job_id}' not found. Use 'python main.py status' to see available jobs.")
+    return None
+
+
+def _get_ai_engine(config):
+    """Initialize and return the AI engine."""
+    from ai_engine import get_engine
+    engine = get_engine(SCRIPT_DIR, config.config if hasattr(config, 'config') else config)
+    if not engine.is_available():
+        print("AI not available. Set OPENROUTER_API_KEY in .env or environment.")
+        print("Get a key at: https://openrouter.ai/keys")
+        return None
+    return engine
+
+
+def cmd_ai_cover_letter(args, config):
+    """Generate an AI-powered cover letter."""
+    from resume_parser import load_profile
+
+    job_id = None
+    if "--job-id" in args:
+        idx = args.index("--job-id")
+        if idx + 1 < len(args):
+            job_id = args[idx + 1]
+
+    tone = "confident"
+    if "--tone" in args:
+        idx = args.index("--tone")
+        if idx + 1 < len(args):
+            tone = args[idx + 1]
+
+    if not job_id:
+        print("Usage: python main.py ai-cover-letter --job-id JOB_ID [--tone confident|warm|formal]")
+        return
+
+    job = _load_job_by_id(job_id)
+    if not job:
+        return
+
+    engine = _get_ai_engine(config)
+    if not engine:
+        return
+
+    profile = load_profile(SCRIPT_DIR)
+    if not profile:
+        print("No resume profile. Run: python main.py resume --file your_resume.pdf")
+        return
+
+    print(f"\nGenerating cover letter for: {job.get('title', '')} at {job.get('company', '')}")
+    print(f"Model: {engine.get_model_for_task('cover_letter')} | Tone: {tone}\n")
+
+    letter = engine.generate_cover_letter(job, profile, tone=tone)
+    if letter:
+        print(letter)
+        # Save to file
+        out_file = SCRIPT_DIR / f"cover_letter_{job_id[:8]}.txt"
+        out_file.write_text(letter)
+        print(f"\nSaved to: {out_file}")
+    else:
+        print("AI generation failed. Check your API key and try again.")
+
+
+def cmd_ai_score(args, config):
+    """AI-enhanced job scoring."""
+    from resume_parser import load_profile
+
+    job_id = None
+    if "--job-id" in args:
+        idx = args.index("--job-id")
+        if idx + 1 < len(args):
+            job_id = args[idx + 1]
+
+    if not job_id:
+        print("Usage: python main.py ai-score --job-id JOB_ID")
+        return
+
+    job = _load_job_by_id(job_id)
+    if not job:
+        return
+
+    engine = _get_ai_engine(config)
+    if not engine:
+        return
+
+    profile = load_profile(SCRIPT_DIR)
+    if not profile:
+        print("No resume profile. Run: python main.py resume --file your_resume.pdf")
+        return
+
+    desc = job.get("description", job.get("snippet", ""))
+    print(f"\nScoring: {job.get('title', '')} at {job.get('company', '')}")
+    print(f"Model: {engine.get_model_for_task('score_job_fit')}\n")
+
+    result = engine.score_job_fit(desc, profile)
+    if result:
+        base = job.get("match", 0)
+        adj = result.get("adjustment", 0)
+        print(f"Base score:    {base}")
+        print(f"AI adjustment: {'+' if adj >= 0 else ''}{adj}")
+        print(f"Final score:   {base + adj}")
+        print(f"\nReasoning: {result.get('reasoning', 'N/A')}")
+        if result.get("fit_areas"):
+            print(f"Strengths: {', '.join(result['fit_areas'])}")
+        if result.get("gap_areas"):
+            print(f"Gaps: {', '.join(result['gap_areas'])}")
+        print(f"Interview likelihood: {result.get('interview_likelihood', 'N/A')}")
+    else:
+        print("AI scoring failed.")
+
+
+def cmd_ai_interview(args, config):
+    """Generate AI interview answer."""
+    from resume_parser import load_profile
+
+    question = None
+    if "--question" in args:
+        idx = args.index("--question")
+        if idx + 1 < len(args):
+            question = args[idx + 1]
+
+    job_id = None
+    if "--job-id" in args:
+        idx = args.index("--job-id")
+        if idx + 1 < len(args):
+            job_id = args[idx + 1]
+
+    if not question:
+        print("Usage: python main.py ai-interview --question \"Tell me about yourself\" [--job-id JOB_ID]")
+        return
+
+    engine = _get_ai_engine(config)
+    if not engine:
+        return
+
+    profile = load_profile(SCRIPT_DIR)
+    if not profile:
+        print("No resume profile. Run: python main.py resume --file your_resume.pdf")
+        return
+
+    job_context = {}
+    if job_id:
+        job = _load_job_by_id(job_id)
+        if job:
+            job_context = job
+
+    print(f"\nQuestion: {question}")
+    print(f"Model: {engine.get_model_for_task('interview_answer')}\n")
+
+    answer = engine.generate_interview_answers(question, job_context, profile)
+    if answer:
+        print(answer)
+    else:
+        print("AI generation failed.")
+
+
+def cmd_ai_research(args, config):
+    """AI-powered company research."""
+    company = None
+    if "--company" in args:
+        idx = args.index("--company")
+        if idx + 1 < len(args):
+            company = args[idx + 1]
+
+    if not company:
+        print("Usage: python main.py ai-research --company \"Acme Corp\"")
+        return
+
+    engine = _get_ai_engine(config)
+    if not engine:
+        return
+
+    print(f"\nResearching: {company}")
+    print(f"Model: {engine.get_model_for_task('company_research_synthesis')}")
+
+    try:
+        from brave_search import BraveSearch
+        brave = BraveSearch(SCRIPT_DIR)
+        if brave.is_available():
+            print("Brave Search: enabled (real-time data)")
+        else:
+            print("Brave Search: disabled (AI will use training data only)")
+    except ImportError:
+        brave = None
+        print("Brave Search: not available")
+
+    print()
+    result = engine.research_company(company, brave)
+    if result:
+        print(json.dumps(result, indent=2))
+        # Save
+        out_file = SCRIPT_DIR / f"research_{company.lower().replace(' ', '_')}.json"
+        with open(out_file, 'w') as f:
+            json.dump(result, f, indent=2)
+        print(f"\nSaved to: {out_file}")
+    else:
+        print("Research failed.")
+
+
+def cmd_ai_pitch(args, config):
+    """Generate AI elevator pitch."""
+    from resume_parser import load_profile
+
+    job_id = None
+    if "--job-id" in args:
+        idx = args.index("--job-id")
+        if idx + 1 < len(args):
+            job_id = args[idx + 1]
+
+    if not job_id:
+        print("Usage: python main.py ai-pitch --job-id JOB_ID")
+        return
+
+    job = _load_job_by_id(job_id)
+    if not job:
+        return
+
+    engine = _get_ai_engine(config)
+    if not engine:
+        return
+
+    profile = load_profile(SCRIPT_DIR)
+    if not profile:
+        print("No resume profile. Run: python main.py resume --file your_resume.pdf")
+        return
+
+    print(f"\nGenerating pitch for: {job.get('title', '')} at {job.get('company', '')}")
+    result = engine.generate_pitch(job, profile)
+    if result:
+        print(f"\n{'='*50}")
+        print(result.get("pitch", ""))
+        print(f"{'='*50}")
+        if result.get("key_hooks"):
+            print(f"\nKey hooks: {', '.join(result['key_hooks'])}")
+        if result.get("personalization_notes"):
+            print(f"Notes: {result['personalization_notes']}")
+    else:
+        print("Pitch generation failed.")
+
+
+def cmd_ai_coach(args, config):
+    """Generate AI interview coaching guide."""
+    from resume_parser import load_profile
+
+    job_id = None
+    if "--job-id" in args:
+        idx = args.index("--job-id")
+        if idx + 1 < len(args):
+            job_id = args[idx + 1]
+
+    if not job_id:
+        print("Usage: python main.py ai-coach --job-id JOB_ID")
+        return
+
+    job = _load_job_by_id(job_id)
+    if not job:
+        return
+
+    engine = _get_ai_engine(config)
+    if not engine:
+        return
+
+    profile = load_profile(SCRIPT_DIR)
+    if not profile:
+        print("No resume profile. Run: python main.py resume --file your_resume.pdf")
+        return
+
+    print(f"\nGenerating coaching guide for: {job.get('title', '')} at {job.get('company', '')}")
+    result = engine.generate_coaching_guide(job, profile)
+    if result and not result.get("error"):
+        print(f"\n{'='*50}")
+        print(f"Company Angle: {result.get('company_angle', 'N/A')}")
+        print(f"\nKey Themes:")
+        for theme in result.get("key_themes", []):
+            print(f"  - {theme}")
+        print(f"\nLikely Questions:")
+        for q in result.get("likely_questions", []):
+            if isinstance(q, dict):
+                print(f"  Q: {q.get('question', '')}")
+                print(f"     Approach: {q.get('approach', '')}")
+            else:
+                print(f"  - {q}")
+        print(f"\nTalking Points:")
+        for tp in result.get("talking_points", []):
+            print(f"  - {tp}")
+        if result.get("red_flags_to_address"):
+            print(f"\nRed Flags to Address:")
+            for rf in result["red_flags_to_address"]:
+                print(f"  ! {rf}")
+        print(f"\nClosing Strategy: {result.get('closing_strategy', 'N/A')}")
+
+        # Save
+        out_file = SCRIPT_DIR / f"coaching_{job_id[:8]}.json"
+        with open(out_file, 'w') as f:
+            json.dump(result, f, indent=2)
+        print(f"\nSaved to: {out_file}")
+    else:
+        print("Coaching guide generation failed.")
+
+
+def cmd_ai_usage(args, config):
+    """Show AI usage statistics."""
+    engine = _get_ai_engine(config)
+    if not engine:
+        return
+
+    stats = engine.get_usage_stats()
+    print(f"\n{'='*50}")
+    print(f"AI Usage Statistics")
+    print(f"{'='*50}")
+    print(f"Total calls:       {stats.get('total_calls', 0)}")
+    print(f"Input tokens:      {stats.get('total_input_tokens', 0):,}")
+    print(f"Output tokens:     {stats.get('total_output_tokens', 0):,}")
+    print(f"Estimated cost:    ${stats.get('estimated_cost_usd', 0):.4f}")
+
+    by_model = stats.get("by_model", {})
+    if by_model:
+        print(f"\nBy Model:")
+        for model, data in sorted(by_model.items()):
+            print(f"  {model}: {data['calls']} calls, ${data['cost']:.4f}")
+
+    by_task = stats.get("by_task", {})
+    if by_task:
+        print(f"\nBy Task:")
+        for task, data in sorted(by_task.items()):
+            print(f"  {task}: {data['calls']} calls, ${data['cost']:.4f}")
+
+    daily = stats.get("daily", {})
+    if daily:
+        print(f"\nRecent Daily Usage:")
+        for day in sorted(daily.keys())[-7:]:
+            d = daily[day]
+            print(f"  {day}: {d['calls']} calls, ${d['cost']:.4f}")
+
+
 def main():
     args = sys.argv[1:]
 
@@ -536,6 +913,14 @@ def main():
         "export": cmd_export,
         "materials": cmd_materials,
         "init": cmd_init,
+        # AI-powered commands
+        "ai-cover-letter": cmd_ai_cover_letter,
+        "ai-score": cmd_ai_score,
+        "ai-interview": cmd_ai_interview,
+        "ai-research": cmd_ai_research,
+        "ai-pitch": cmd_ai_pitch,
+        "ai-coach": cmd_ai_coach,
+        "ai-usage": cmd_ai_usage,
     }
 
     if command in commands:

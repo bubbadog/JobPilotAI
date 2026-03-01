@@ -105,8 +105,48 @@ class QABank:
                 "field_type": best_match.get("field_type", "text"),
                 "category": best_match.get("category", ""),
                 "source_question": best_match["question"],
+                "source": "qa_bank",
             }
 
+        # No stored answer found — try AI generation
+        ai_answer = self._ai_generate_answer(question_text, job_context)
+        if ai_answer:
+            return ai_answer
+
+        return None
+
+    def _ai_generate_answer(self, question_text, job_context=None):
+        """Generate an answer using AI when no stored answer exists.
+
+        Returns:
+            dict with answer and metadata, or None if AI unavailable
+        """
+        try:
+            from ai_engine import get_engine
+            from resume_parser import load_profile
+            engine = get_engine(self.config_dir)
+            if not engine.is_available():
+                return None
+
+            profile = load_profile(self.config_dir)
+            if not profile:
+                return None
+
+            context = job_context or {}
+            ai_answer = engine.generate_interview_answers(
+                question_text, context, profile
+            )
+            if ai_answer:
+                return {
+                    "answer": ai_answer,
+                    "confidence": 0.7,
+                    "field_type": "text",
+                    "category": "ai_generated",
+                    "source_question": question_text,
+                    "source": "ai_generated",
+                }
+        except (ImportError, Exception):
+            pass
         return None
 
     def _fill_template(self, answer, context):

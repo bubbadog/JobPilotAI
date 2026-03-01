@@ -322,6 +322,27 @@ class ConfigManager:
             # Merge automation overrides
             if "automation" in user_config:
                 config["automation"].update(user_config["automation"])
+            # Load AI config
+            if "ai" in user_config:
+                config["ai"] = user_config["ai"]
+            # Load materials config
+            if "materials" in user_config:
+                config["materials"] = user_config["materials"]
+
+        # Set AI defaults if not configured
+        if "ai" not in config:
+            config["ai"] = {
+                "enabled": True,
+                "default_model": "gemini",
+                "max_tokens_cover_letter": 1500,
+                "max_tokens_interview": 1000,
+                "max_tokens_default": 1200,
+                "ai_scoring_enabled": True,
+                "ai_scoring_threshold": 70,
+                "brave_search_enabled": True,
+                "cache_ttl_hours": 24,
+                "model_overrides": {},
+            }
 
         # 2. Load career_pages.json (watchlist)
         career_file = self.config_dir / "career_pages.json"

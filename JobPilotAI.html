@@ -243,6 +243,7 @@ select.settings-input { cursor: pointer; }
     <button class="header-btn" onclick="runManualScan()">Run Scan Now</button>
     <button class="header-btn" onclick="importEngineData()">Import Engine Data</button>
     <button class="header-btn" onclick="exportData()">Export Data</button>
+    <span id="sync-status" style="display:none;font-size:11px;color:#3FB950;background:#1B2A1B;padding:3px 8px;border-radius:8px;margin-left:8px;"></span>
   </div>
 </div>
 
@@ -2322,6 +2323,63 @@ function renderActionLog() {
   }).join('');
 }
 
+// ===================== V5: AUTO-SYNC FROM ENGINE =====================
+function autoSyncEngine() {
+  // Attempt to load engine_export.json from the same directory as this HTML file.
+  // Works when the HTML is opened via file:// or served locally.
+  fetch("engine_export.json")
+    .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(imported => {
+      let changed = false;
+      // Import discovered jobs (merge, don't duplicate)
+      if (imported.discoveredJobs && imported.discoveredJobs.length) {
+        let added = 0;
+        imported.discoveredJobs.forEach(j => {
+          const exists = data.jobs.find(ej => ej.title === j.title && ej.company === j.company);
+          if (!exists) {
+            data.jobs.push({
+              id: j.raw_id || j.id || '',
+              title: j.title,
+              company: j.company || '',
+              location: j.location || '',
+              url: j.url || '',
+              description: j.description || '',
+              match: j.match || 0,
+              sector: j.sector || 'tech',
+              posted: j.posted_date || '',
+              status: 'new',
+              salary: j.salary_range || '',
+              board: j.board_source || '',
+              sources: j.sources || [],
+              easy_apply: j.easy_apply || false,
+              ats_platform: j.ats_platform || '',
+            });
+            added++;
+          }
+        });
+        if (added > 0) { logAction('auto-sync', `Loaded ${added} new jobs from engine`); changed = true; }
+      }
+      if (imported.applicationQueue) { data.applicationQueue = imported.applicationQueue; changed = true; }
+      if (imported.analytics) { data.engineAnalytics = imported.analytics; changed = true; }
+      if (imported.qaBank) { data.qaBank = imported.qaBank; changed = true; }
+      if (imported.materialVariants) { data.materialVariants = imported.materialVariants; changed = true; }
+      if (imported.resumeProfile) { data.resumeProfile = imported.resumeProfile; changed = true; }
+      if (changed) {
+        saveData();
+        renderJobs(); renderQueue(); renderPipeline(); updateControlStats();
+        renderQABank(); renderResumeProfile();
+        renderResumeVariants(); renderCLVariants(); renderMaterialPerformance();
+        const syncBadge = document.getElementById('sync-status');
+        if (syncBadge) {
+          const ts = imported.exported_at ? new Date(imported.exported_at).toLocaleTimeString() : 'now';
+          syncBadge.textContent = `Auto-synced ${ts}`;
+          syncBadge.style.display = 'inline-block';
+        }
+      }
+    })
+    .catch(() => { /* engine_export.json not found — that's fine, user hasn't run CLI yet */ });
+}
+
 // ===================== V4: IMPORT ENGINE DATA =====================
 function importEngineData() {
   const input = document.createElement('input');
@@ -2897,6 +2955,8 @@ function init() {
   renderCLVariants();
   renderMaterialPerformance();
   updateStats();
+  // v5: auto-sync engine data on load (no manual import needed)
+  autoSyncEngine();
 }
 
 document.addEventListener("DOMContentLoaded", init);

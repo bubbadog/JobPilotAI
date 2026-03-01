@@ -794,6 +794,30 @@ class MaterialManager:
 
         return suggestions
 
+    def generate_ai_resume_suggestions(self, base_profile: dict, job_description: str = "",
+                                        sector: str = "general") -> Optional[dict]:
+        """Generate AI-powered resume suggestions for a specific job.
+
+        Unlike generate_resume_suggestions() which uses hardcoded sector templates,
+        this method uses the AI engine for personalized, job-specific recommendations.
+
+        Args:
+            base_profile: Parsed resume profile from resume_parser.py
+            job_description: The target job description (optional but recommended)
+            sector: Target sector
+
+        Returns:
+            dict with AI suggestions, or None if AI unavailable
+        """
+        try:
+            from ai_engine import get_engine
+            engine = get_engine(self.config_dir)
+            if engine.is_available() and job_description:
+                return engine.suggest_resume_tweaks(job_description, base_profile, sector)
+        except (ImportError, Exception):
+            pass
+        return None
+
     # ── Export for Dashboard ──
 
     def export_for_dashboard(self) -> dict:

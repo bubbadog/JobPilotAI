@@ -369,6 +369,9 @@ class ScoringEngine:
     def batch_score(self, jobs):
         """Score a list of jobs and add score data to each.
 
+        If AI scoring is enabled, top-scoring jobs get an AI refinement pass
+        that adjusts the score ±15 points based on semantic fit analysis.
+
         Returns:
             List of jobs sorted by score descending, with score data added.
         """
@@ -379,6 +382,35 @@ class ScoringEngine:
             job["meets_threshold"] = result["meets_threshold"]
             job["apply_type"] = result["apply_type"]
             job["sector"] = self._categorize_sector(job)
+
+        # AI refinement pass for top candidates
+        ai_config = {}
+        if self.config:
+            ai_config = self.config.get("ai", {})
+        ai_enabled = ai_config.get("ai_scoring_enabled", False)
+        ai_threshold = ai_config.get("ai_scoring_threshold", 70)
+
+        if ai_enabled:
+            try:
+                from ai_engine import get_engine
+                from resume_parser import load_profile
+                engine = get_engine(SCRIPT_DIR, self.config.config if self.config else {})
+                if engine.is_available():
+                    profile = load_profile(SCRIPT_DIR)
+                    if profile:
+                        candidates = [j for j in jobs if j["match"] >= ai_threshold]
+                        for job in candidates[:20]:  # Cap at 20 to limit API calls
+                            desc = job.get("description", job.get("snippet", ""))
+                            if desc:
+                                ai_result = engine.score_job_fit(desc, profile)
+                                if ai_result and "adjustment" in ai_result:
+                                    job["ai_adjustment"] = ai_result["adjustment"]
+                                    job["ai_reasoning"] = ai_result.get("reasoning", "")
+                                    job["ai_fit_areas"] = ai_result.get("fit_areas", [])
+                                    job["ai_gap_areas"] = ai_result.get("gap_areas", [])
+                                    job["match"] = max(0, min(100, job["match"] + ai_result["adjustment"]))
+            except (ImportError, Exception):
+                pass  # AI unavailable — algorithmic scores stand as-is
 
         return sorted(jobs, key=lambda j: j["match"], reverse=True)
 
