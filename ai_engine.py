@@ -23,6 +23,7 @@ import time
 import hashlib
 from pathlib import Path
 from datetime import datetime, timedelta
+from dotenv import load_dotenv
 
 # =====================================================================
 # MODEL DEFINITIONS
@@ -138,14 +139,9 @@ class AIEngine:
         self.config_dir = Path(config_dir) if config_dir else Path(__file__).parent
         self.config = config or {}
         
-        # Load API key
+        # Load API key from environment (python-dotenv loads .env automatically)
+        load_dotenv(self.config_dir / ".env")
         self.api_key = os.environ.get("OPENROUTER_API_KEY", "")
-        if not self.api_key:
-            env_file = self.config_dir / ".env"
-            if env_file.exists():
-                for line in env_file.read_text().splitlines():
-                    if line.startswith("OPENROUTER_API_KEY="):
-                        self.api_key = line.split("=", 1)[1].strip().strip('"').strip("'")
         
         # AI config from job_search_config.json
         ai_config = self.config.get("ai", {})

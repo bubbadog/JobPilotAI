@@ -33,6 +33,15 @@ DEFAULT_AUTOMATION = {
 }
 
 DEFAULT_BOARD_CONFIG = {
+    # API-based (reliable, always-on)
+    "brave_jobs": {
+        "enabled": True, "priority": 0,
+        "search_url": "",
+    },
+    "themuse_free": {
+        "enabled": True, "priority": 0,
+        "search_url": "",
+    },
     # Major aggregators
     "indeed": {
         "enabled": True, "priority": 1,
@@ -255,9 +264,10 @@ DEFAULT_BOARD_CONFIG = {
     # Aggregator APIs
     "adzuna": {
         "enabled": True, "priority": 3,
-        "api_url": "https://api.adzuna.com/v1/api/jobs/us/search/1?app_id={api_id}&app_key={api_key}&results_per_page=25&what={query}&where={location}&max_days_old=7",
+        "api_url": "https://api.adzuna.com/v1/api/jobs/us/search/1?results_per_page=25&what={query}&where={location}&max_days_old=7",
         "has_easy_apply": False,
         "is_api": True,
+        "auth_params": ["ADZUNA_APP_ID:app_id", "ADZUNA_APP_KEY:app_key"],
     },
     "themuse": {
         "enabled": True, "priority": 3,

@@ -20,6 +20,7 @@ import time
 from pathlib import Path
 from datetime import datetime
 from urllib.parse import quote_plus
+from dotenv import load_dotenv
 
 try:
     import requests
@@ -35,13 +36,11 @@ class BraveSearch:
     """Wrapper for Brave Search API with structured result parsing."""
 
     def __init__(self, config_dir=None):
+        if config_dir:
+            load_dotenv(Path(config_dir) / ".env")
+        else:
+            load_dotenv()
         self.api_key = os.environ.get("BRAVE_API_KEY", "")
-        if not self.api_key and config_dir:
-            env_file = Path(config_dir) / ".env"
-            if env_file.exists():
-                for line in env_file.read_text().splitlines():
-                    if line.startswith("BRAVE_API_KEY="):
-                        self.api_key = line.split("=", 1)[1].strip().strip('"').strip("'")
 
         self.enabled = bool(self.api_key) and HAS_REQUESTS
         self._last_request = 0

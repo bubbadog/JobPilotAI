@@ -43,6 +43,18 @@ Thumbs.db
 playwright-report/
 test-results/
 
+# ── Discovery & Analytics (generated per-run) ──
+discovered_jobs.json
+discovered_jobs_raw.json
+analytics_data.json
+
+# ── AI Cache & Usage ──
+.ai_cache/
+.ai_usage.json
+
+# ── Research files (reveal job search targets) ──
+research_*.json
+
 # ── Exports (generated files) ──
 data/exports/
 job_search_export.json
