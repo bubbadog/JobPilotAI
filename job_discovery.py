@@ -7,6 +7,7 @@ real job listings from 30+ sources. Supports search pages, APIs, and RSS feeds.
 import asyncio
 import json
 import hashlib
+import os
 import re
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -105,9 +106,7 @@ class BoardScraper:
 
         url = self.build_search_url(keyword, location)
         jobs = []
-        page = await browser.new_page(
-            user_agent=self.limiter.get_random_user_agent()
-        )
+        page = await browser.new_page()
 
         try:
             for page_num in range(self.max_pages):
@@ -361,6 +360,14 @@ class APIBoardScraper(BoardScraper):
         url = api_url.replace("{query}", quote_plus(keyword))
         url = url.replace("{location}", quote_plus(location))
 
+        # Inject auth params from env vars (keeps credentials out of URL templates)
+        for auth_spec in self.config.get("auth_params", []):
+            env_key, param_name = auth_spec.split(":", 1)
+            value = os.environ.get(env_key, "")
+            if value:
+                sep = "&" if "?" in url else "?"
+                url = f"{url}{sep}{quote_plus(param_name)}={quote_plus(value)}"
+
         if not self.limiter.can_request(self.board_name):
             return []
 
@@ -443,7 +450,7 @@ class CareerPageScraper(BoardScraper):
             return []
 
         self.limiter.wait(self.board_name)
-        page = await browser.new_page(user_agent=self.limiter.get_random_user_agent())
+        page = await browser.new_page()
         jobs = []
 
         try:
@@ -504,7 +511,145 @@ class CareerPageScraper(BoardScraper):
 # SCRAPER REGISTRY
 # =====================================================================
 
+class BraveJobScraper(BoardScraper):
+    """Find job postings via Brave Search API — reliable, no Playwright needed."""
+    board_name = "brave_jobs"
+
+    async def scrape(self, browser, keyword, location, max_results=50):
+        try:
+            from brave_search import get_searcher
+            searcher = get_searcher(SCRIPT_DIR)
+            if not searcher.is_available():
+                print(f"  [brave_jobs] No BRAVE_API_KEY, skipping")
+                return []
+        except ImportError:
+            return []
+
+        query = f"{keyword} jobs"
+        if location and location.lower() != "remote":
+            query += f" {location}"
+        else:
+            query += " remote"
+        query += " hiring apply 2026"
+
+        results = searcher.search(query, count=20)
+        jobs = []
+        job_domains = ["greenhouse.io", "lever.co", "workday", "jobs.", "careers.",
+                       "ashbyhq.com", "smartrecruiters", "indeed.com", "linkedin.com/jobs",
+                       "ziprecruiter.com", "icims.com", "jobvite.com", "apply"]
+        job_words = ["apply", "hiring", "position", "role", "engineer", "manager",
+                     "analyst", "scientist", "director", "lead", "senior", "job"]
+
+        for r in results:
+            url_lower = r.get("url", "").lower()
+            text = (r.get("title", "") + " " + r.get("description", "")).lower()
+
+            # Check if this looks like a real job posting
+            is_job_url = any(d in url_lower for d in job_domains)
+            has_job_words = sum(1 for w in job_words if w in text) >= 2
+
+            if is_job_url or has_job_words:
+                title = r.get("title", "").strip()
+                # Try to extract company from title patterns like "Job Title at Company"
+                company = ""
+                for sep in [" at ", " - ", " | ", " — "]:
+                    if sep in title:
+                        parts = title.split(sep)
+                        if len(parts) >= 2:
+                            title = parts[0].strip()
+                            company = parts[1].strip()
+                            break
+
+                if title:
+                    jobs.append(RawJob(
+                        title=title[:120],
+                        company=company[:80],
+                        location=location,
+                        url=r.get("url", ""),
+                        board_source="brave_jobs",
+                        description=r.get("description", "")[:500],
+                        remote="remote" in text,
+                    ))
+
+        print(f"  [brave_jobs] Found {len(jobs)} job results for '{keyword}' in '{location}'")
+        return jobs[:max_results]
+
+
+class TheMuseFreeScraper(BoardScraper):
+    """TheMuse free API — no API key required, returns real structured job data."""
+    board_name = "themuse_free"
+
+    async def scrape(self, browser, keyword, location, max_results=50):
+        if not HAS_HTTPX:
+            return []
+
+        # TheMuse free API: https://www.themuse.com/api/public/jobs
+        params = f"page=0&descending=true"
+        # Add category filter if keyword matches known categories
+        category_map = {
+            "product manager": "Product",
+            "data analyst": "Data+and+Analytics",
+            "data scientist": "Data+Science",
+            "software engineer": "Software+Engineering",
+            "operations": "Operations",
+            "strategy": "Business+Strategy",
+            "program manager": "Project+Management",
+            "business analyst": "Data+and+Analytics",
+        }
+        kw_lower = keyword.lower()
+        for term, cat in category_map.items():
+            if term in kw_lower:
+                params += f"&category={cat}"
+                break
+
+        if location and location.lower() != "remote":
+            loc_encoded = quote_plus(location)
+            params += f"&location={loc_encoded}"
+
+        url = f"https://www.themuse.com/api/public/jobs?{params}"
+
+        try:
+            if hasattr(httpx, 'AsyncClient'):
+                async with httpx.AsyncClient() as client:
+                    resp = await client.get(url, timeout=15)
+                    data = resp.json()
+            else:
+                resp = httpx.get(url, timeout=15)
+                data = resp.json()
+
+            jobs = []
+            for item in data.get("results", []):
+                locs = item.get("locations", [])
+                loc = locs[0].get("name", "") if locs else "Remote"
+                title = item.get("name", "")
+                company = item.get("company", {}).get("name", "")
+                # Only include if keyword appears in title or company
+                combined = (title + " " + company).lower()
+                if any(w in combined for w in kw_lower.split()):
+                    jobs.append(RawJob(
+                        title=title,
+                        company=company,
+                        location=loc,
+                        url=f"https://www.themuse.com/jobs/{item.get('id', '')}",
+                        board_source="themuse_free",
+                        description=item.get("contents", "")[:500],
+                        posted_date=item.get("publication_date", "")[:10],
+                    ))
+
+            print(f"  [themuse_free] Found {len(jobs)} jobs for '{keyword}'")
+            return jobs[:max_results]
+        except Exception as e:
+            print(f"  [themuse_free] Error: {e}")
+            return []
+
+
 SCRAPER_CLASSES = {
+    # API-based (reliable, try first)
+    "brave_jobs": BraveJobScraper,
+    "themuse_free": TheMuseFreeScraper,
+    "adzuna": AdzunaScraper,
+    "themuse": TheMuseScraper,
+    # Playwright-based (fragile, bonus results)
     "indeed": IndeedScraper,
     "linkedin": LinkedInScraper,
     "glassdoor": GlassdoorScraper,
@@ -523,8 +668,6 @@ SCRAPER_CLASSES = {
     "ycombinator": YCombinatorScraper,
     "simplyhired": SimplyHiredScraper,
     "higheredjobs": HigherEdJobsScraper,
-    "adzuna": AdzunaScraper,
-    "themuse": TheMuseScraper,
 }
 
 
@@ -554,10 +697,6 @@ class DiscoveryEngine:
         Returns:
             List of RawJob objects
         """
-        if not HAS_PLAYWRIGHT:
-            print("ERROR: Playwright not installed. Run: pip install playwright && playwright install chromium")
-            return []
-
         all_keywords = keywords or self.config.get_keywords()[:5]
         all_locations = locations or self.config.get_locations()[:3]
         enabled_boards = self.config.get_enabled_boards()
@@ -565,42 +704,54 @@ class DiscoveryEngine:
         if boards:
             enabled_boards = [b for b in enabled_boards if b["name"] in boards]
 
+        # Always include API-based scrapers (brave_jobs, themuse_free) even if
+        # not explicitly in the user's board config
+        api_board_names = {"brave_jobs", "themuse_free", "adzuna"}
+        enabled_names = {b["name"] for b in enabled_boards}
+        for api_name in api_board_names:
+            if api_name not in enabled_names:
+                enabled_boards.insert(0, {"name": api_name, "enabled": True, "priority": 0})
+
         all_jobs = []
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         print(f"\n{'='*60}")
         print(f"JOB DISCOVERY ENGINE — {timestamp}")
         print(f"{'='*60}")
         print(f"Boards: {len(enabled_boards)} | Keywords: {len(all_keywords)} | Locations: {len(all_locations)}")
+        print(f"Board names: {[b['name'] for b in enabled_boards]}")
         print(f"{'='*60}\n")
 
-        async with async_playwright() as pw:
-            browser = await pw.chromium.launch(
-                headless=True,
-                args=["--no-sandbox", "--disable-blink-features=AutomationControlled"]
-            )
-            context = await browser.new_context(
-                viewport={"width": 1920, "height": 1080},
-                locale="en-US",
-            )
+        # Separate API-based scrapers (no Playwright needed) from browser scrapers
+        api_scrapers = []
+        browser_scrapers = []
+        for board_cfg in enabled_boards:
+            name = board_cfg["name"]
+            cls = SCRAPER_CLASSES.get(name)
+            if not cls:
+                print(f"[{name}] No scraper class found, skipping")
+                continue
+            if issubclass(cls, (APIBoardScraper,)) or name in api_board_names:
+                api_scrapers.append((name, board_cfg, cls))
+            else:
+                browser_scrapers.append((name, board_cfg, cls))
 
-            # Scrape each board
-            for board_cfg in enabled_boards:
-                board_name = board_cfg["name"]
-                scraper_cls = SCRAPER_CLASSES.get(board_name)
-                if not scraper_cls:
-                    print(f"[{board_name}] No scraper class found, skipping")
-                    continue
+        print(f"API scrapers: {[s[0] for s in api_scrapers]}")
+        print(f"Browser scrapers: {[s[0] for s in browser_scrapers]}")
 
-                print(f"\n--- Scraping: {board_name.upper()} ---")
+        # ── Phase 1: API-based discovery (fast, reliable, no browser) ──
+        if api_scrapers:
+            print("── Phase 1: API-based discovery ──")
+            for board_name, board_cfg, scraper_cls in api_scrapers:
+                print(f"\n--- Searching: {board_name.upper()} ---")
                 scraper = scraper_cls(board_cfg, self.limiter)
                 board_jobs = []
 
-                for keyword in all_keywords[:3]:  # Top 3 keywords per board
-                    for location in all_locations[:2]:  # Top 2 locations
+                for keyword in all_keywords[:5]:
+                    for location in all_locations[:3]:
                         try:
                             jobs = await scraper.scrape(
-                                context, keyword, location,
-                                max_results=max_per_board // (len(all_keywords[:3]) * len(all_locations[:2]))
+                                None, keyword, location,
+                                max_results=max_per_board // max(len(all_keywords[:5]) * len(all_locations[:3]), 1)
                             )
                             board_jobs.extend(jobs)
                         except Exception as e:
@@ -609,21 +760,62 @@ class DiscoveryEngine:
                 all_jobs.extend(board_jobs)
                 print(f"  [{board_name}] Total: {len(board_jobs)} jobs")
 
-            # Scrape watchlist career pages
-            if include_watchlist:
-                watchlist = self.config.get_watchlist()
-                if watchlist:
-                    print(f"\n--- Scraping: CAREER PAGE WATCHLIST ({len(watchlist)} companies) ---")
-                    for entry in watchlist:
-                        company = entry.get("companyName", "")
-                        url = entry.get("careerPageUrl", "")
-                        if company and url:
-                            jobs = await self.career_scraper.scrape_career_page(
-                                context, company, url, all_keywords
-                            )
-                            all_jobs.extend(jobs)
+        # ── Phase 2: Playwright browser scraping (bonus, may fail) ──
+        if browser_scrapers and HAS_PLAYWRIGHT:
+            print(f"\n── Phase 2: Browser scraping ({len(browser_scrapers)} boards) ──")
+            try:
+                async with async_playwright() as pw:
+                    browser = await pw.chromium.launch(
+                        headless=True,
+                        args=["--no-sandbox", "--disable-blink-features=AutomationControlled"]
+                    )
+                    context = await browser.new_context(
+                        viewport={"width": 1920, "height": 1080},
+                        locale="en-US",
+                        user_agent=self.limiter.get_random_user_agent(),
+                    )
 
-            await browser.close()
+                    for board_name, board_cfg, scraper_cls in browser_scrapers:
+                        print(f"\n--- Scraping: {board_name.upper()} ---")
+                        scraper = scraper_cls(board_cfg, self.limiter)
+                        board_jobs = []
+
+                        for keyword in all_keywords[:3]:
+                            for location in all_locations[:2]:
+                                try:
+                                    jobs = await scraper.scrape(
+                                        context, keyword, location,
+                                        max_results=max_per_board // max(len(all_keywords[:3]) * len(all_locations[:2]), 1)
+                                    )
+                                    board_jobs.extend(jobs)
+                                except Exception as e:
+                                    print(f"  [{board_name}] Error with '{keyword}' in '{location}': {e}")
+
+                        all_jobs.extend(board_jobs)
+                        print(f"  [{board_name}] Total: {len(board_jobs)} jobs")
+
+                    # Scrape watchlist career pages
+                    if include_watchlist:
+                        watchlist = self.config.get_watchlist()
+                        if watchlist:
+                            print(f"\n--- Scraping: CAREER PAGE WATCHLIST ({len(watchlist)} companies) ---")
+                            for entry in watchlist:
+                                company = entry.get("companyName", "")
+                                url = entry.get("careerPageUrl", "")
+                                if company and url:
+                                    jobs = await self.career_scraper.scrape_career_page(
+                                        context, company, url, all_keywords
+                                    )
+                                    all_jobs.extend(jobs)
+
+                    await browser.close()
+            except Exception as e:
+                print(f"\n⚠ Browser scraping failed ({e})")
+                print("  API results above are still valid. Browser scraping is a bonus.")
+        elif browser_scrapers and not HAS_PLAYWRIGHT:
+            print(f"\n⚠ Playwright not installed — skipping {len(browser_scrapers)} browser-based boards")
+            print("  To enable: pip install playwright && playwright install chromium")
+            print("  API-based results above are your primary source.")
 
         # Save raw results
         output_file = SCRIPT_DIR / "discovered_jobs_raw.json"
